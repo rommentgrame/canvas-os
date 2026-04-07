@@ -1,262 +1,378 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8"/>
-<title>MONOLITH OS - Black & White Edition</title>
-<style>
-:root {
-    --bg: #000000;
-    --fg: #ffffff;
-    --gray: #1a1a1a;
-    --light-gray: #333333;
-    --font: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-}
-* { box-sizing: border-box; margin: 0; padding: 0; cursor: crosshair; }
-body, html { 
-    width: 100%; height: 100%; overflow: hidden; 
-    background: var(--bg); color: var(--fg);
-    font-family: var(--font);
-}
+    <meta charset="UTF-8"/>
+    <title>MONOLITH OS - ULTIMATE BLACK & WHITE</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #000000;
+            --fg: #ffffff;
+            --br: #ffffff;
+            --accent: #ffffff;
+            --font-main: 'Inter', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
 
-/* Grille de fond minimaliste */
-#canvas {
-    width: 10000px; height: 10000px;
-    background-image: radial-gradient(circle, #222 1px, transparent 1px);
-    background-size: 50px 50px;
-    position: absolute; top: 0; left: 0;
-    transform-origin: 0 0;
-}
+        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
+        body, html { 
+            width: 100%; height: 100%; overflow: hidden; 
+            background: var(--bg); color: var(--fg);
+            font-family: var(--font-main);
+        }
 
-/* Fenêtres Monolithiques */
-.window {
-    position: absolute;
-    background: var(--bg);
-    border: 1.5px solid var(--fg);
-    display: flex; flex-direction: column;
-    min-width: 150px; min-height: 100px;
-    box-shadow: 10px 10px 0px var(--fg); /* Ombre rétro-moderne */
-}
-.window.selected { box-shadow: 15px 15px 0px var(--fg); transform: translate(-2px, -2px); }
+        /* --- INTERFACE CORE --- */
+        #desktop {
+            width: 100vw; height: 100vh;
+            position: relative;
+            background-image: 
+                linear-gradient(to right, #111 1px, transparent 1px),
+                linear-gradient(to bottom, #111 1px, transparent 1px);
+            background-size: 40px 40px;
+            overflow: hidden;
+        }
 
-.win-header {
-    background: var(--fg); color: var(--bg);
-    padding: 6px 12px; font-weight: 900; font-size: 11px;
-    text-transform: uppercase; letter-spacing: 2px;
-    display: flex; justify-content: space-between; align-items: center;
-    cursor: grab;
-}
-.win-content { flex: 1; padding: 10px; overflow: auto; position: relative; }
+        /* --- FENETRES MONOLITH --- */
+        .win {
+            position: absolute;
+            background: var(--bg);
+            border: 2px solid var(--fg);
+            display: flex;
+            flex-direction: column;
+            box-shadow: 8px 8px 0px rgba(255,255,255,0.2);
+            transition: box-shadow 0.1s;
+            min-width: 200px; min-height: 150px;
+        }
+        .win.active {
+            box-shadow: 12px 12px 0px var(--fg);
+            z-index: 1000 !important;
+        }
 
-/* Input et Textarea */
-textarea, input {
-    background: transparent; border: none; color: var(--fg);
-    width: 100%; height: 100%; outline: none; resize: none;
-    font-family: var(--font); font-size: 14px;
-}
+        .win-bar {
+            background: var(--fg);
+            color: var(--bg);
+            padding: 8px 12px;
+            font-family: var(--font-mono);
+            font-weight: 900;
+            font-size: 11px;
+            text-transform: uppercase;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: move;
+            user-select: none;
+        }
 
-/* Barre d'outils flottante */
-.toolbar {
-    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-    background: var(--bg); border: 2px solid var(--fg);
-    padding: 10px 20px; display: flex; gap: 20px; z-index: 9999;
-}
-.tool-btn {
-    background: none; border: none; color: var(--fg);
-    font-weight: bold; font-size: 12px; text-transform: uppercase;
-    cursor: pointer; padding: 5px; transition: 0.2s;
-}
-.tool-btn:hover { background: var(--fg); color: var(--bg); }
+        .win-btn-group { display: flex; gap: 8px; }
+        .win-btn {
+            background: var(--bg);
+            color: var(--fg);
+            border: 1px solid var(--bg);
+            width: 16px; height: 16px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 10px;
+        }
+        .win-btn:hover { background: var(--bg); color: var(--fg); border-color: var(--bg); }
 
-/* Status Bar */
-.status-bar {
-    position: fixed; top: 0; width: 100%; height: 25px;
-    background: var(--fg); color: var(--bg);
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0 15px; font-size: 10px; font-weight: bold; z-index: 10000;
-}
+        .win-body {
+            flex: 1;
+            overflow: auto;
+            padding: 10px;
+            background: var(--bg);
+            position: relative;
+        }
 
-/* Animations */
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-.win-anim { animation: fadeIn 0.2s ease-out; }
-</style>
+        /* --- COMPOSANTS INTERNES --- */
+        textarea {
+            width: 100%; height: 100%;
+            background: transparent; border: none;
+            color: var(--fg); resize: none;
+            font-family: var(--font-main); font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .terminal {
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--fg);
+            background: #000;
+        }
+
+        .btn-ui {
+            background: var(--bg);
+            border: 1px solid var(--fg);
+            color: var(--fg);
+            padding: 5px 12px;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .btn-ui:hover { background: var(--fg); color: var(--bg); }
+
+        /* --- TASKBAR --- */
+        #taskbar {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            height: 40px; background: var(--bg);
+            border-top: 2px solid var(--fg);
+            display: flex; align-items: center; padding: 0 15px;
+            gap: 20px; z-index: 9999;
+        }
+        .sys-clock { font-family: var(--font-mono); font-weight: bold; font-size: 13px; }
+
+        /* --- DESSIN --- */
+        canvas.drawing-area { background: #000; cursor: crosshair; }
+
+        /* --- UTILS --- */
+        .hidden { display: none; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-thumb { background: var(--fg); }
+    </style>
 </head>
 <body>
-<div id="root"></div>
+    <div id="root"></div>
 
-<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-<script type="text/babel">
-const { useState, useEffect, useRef, useCallback } = React;
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback, useMemo } = React;
 
-const App = () => {
-    // --- ÉTAT GLOBAL (Plus de 100 variations possibles via les types) ---
-    const [nodes, setNodes] = useState([]);
-    const [selection, setSelection] = useState([]);
-    const [zoom, setZoom] = useState(1);
-    const [pan, setPan] = useState({ x: 0, y: 0 });
-    const [time, setTime] = useState(new Date().toLocaleTimeString());
-
-    // --- SYSTÈME DE GESTION DES NŒUDS ---
-    const addNode = (type = 'TEXT') => {
-        const id = 'node_' + Date.now();
-        const newNode = {
-            id, type,
-            x: 100 + (nodes.length * 20),
-            y: 100 + (nodes.length * 20),
-            w: 300, h: 200,
-            content: type === 'LIST' ? '• Tâche 1\n• Tâche 2' : '',
-            title: `${type} #${nodes.length + 1}`,
-            minimized: false,
-            locked: false
+        // --- CONSTANTES & LOGIQUE SYSTEME ---
+        const WIDGETS = {
+            TEXT: { title: "Note.txt", w: 400, h: 300, icon: "📄" },
+            CODE: { title: "Script.js", w: 500, h: 400, icon: "💻" },
+            TERMINAL: { title: "Terminal", w: 600, h: 350, icon: ">_" },
+            DRAW: { title: "Canvas.draw", w: 400, h: 400, icon: "🎨" },
+            CALC: { title: "Calc.exe", w: 220, h: 320, icon: "±" },
+            TODO: { title: "Tasks.list", w: 300, h: 400, icon: "✓" },
+            CLOCK: { title: "WorldClock", w: 250, h: 150, icon: "🕒" }
         };
-        setNodes([...nodes, newNode]);
-        setSelection([id]);
-    };
 
-    const updateNode = (id, data) => {
-        setNodes(nds => nds.map(n => n.id === id ? { ...n, ...data } : n));
-    };
+        // --- COMPOSANTS WIDGETS ---
 
-    const deleteNode = (id) => {
-        setNodes(nds => nds.filter(n => n.id !== id));
-    };
+        const TerminalWidget = ({ onAddNode }) => {
+            const [history, setHistory] = useState(["> MONOLITH OS - Version 1.0.0", "> Tapez 'help' pour voir les commandes."]);
+            const [input, setInput] = useState("");
 
-    // --- LOGIQUE DE DÉPLACEMENT ---
-    const handleDrag = (id, e) => {
-        if (nodes.find(n => n.id === id)?.locked) return;
-        const startX = e.clientX;
-        const startY = e.clientY;
-        const node = nodes.find(n => n.id === id);
-        const origX = node.x;
-        const origY = node.y;
-
-        const onMove = (me) => {
-            const dx = (me.clientX - startX) / zoom;
-            const dy = (me.clientY - startY) / zoom;
-            // Snapping (Aimant) de 10px pour l'alignement
-            const newX = Math.round((origX + dx) / 10) * 10;
-            const newY = Math.round((origY + dy) / 10) * 10;
-            updateNode(id, { x: newX, y: newY });
-        };
-        const onUp = () => {
-            window.removeEventListener('mousemove', onMove);
-            window.removeEventListener('mouseup', onUp);
-        };
-        window.addEventListener('mousemove', onMove);
-        window.addEventListener('mouseup', onUp);
-    };
-
-    // --- RACCOURCIS CLAVIER (Fonctions cachées) ---
-    useEffect(() => {
-        const handleKeys = (e) => {
-            if (e.key === 'n' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); addNode('TEXT'); }
-            if (e.key === 'Delete' || e.key === 'Backspace') {
-                if (selection.length > 0 && document.activeElement.tagName !== 'TEXTAREA') {
-                    setNodes(nds => nds.filter(n => !selection.includes(n.id)));
+            const execute = (e) => {
+                if (e.key === 'Enter') {
+                    const cmd = input.toLowerCase().trim();
+                    let response = `> Command '${cmd}' not found.`;
+                    
+                    if (cmd === 'help') response = "> Cmds: note, draw, code, clear, system, exit, color-inv";
+                    if (cmd === 'note') { onAddNode('TEXT'); response = "> Note created."; }
+                    if (cmd === 'clear') { setHistory([]); setInput(""); return; }
+                    if (cmd === 'system') response = `> CPU: OK | RAM: 1.2GB Free | DISK: 88%`;
+                    
+                    setHistory([...history, `$ ${input}`, response]);
+                    setInput("");
                 }
-            }
-        };
-        window.addEventListener('keydown', handleKeys);
-        return () => window.removeEventListener('keydown', handleKeys);
-    }, [selection, nodes]);
+            };
 
-    // Horloge
-    useEffect(() => {
-        const t = setInterval(() => setTime(new Date().toLocaleTimeString()), 1000);
-        return () => clearInterval(t);
-    }, []);
-
-    return (
-        <div style={{ width: '100vw', height: '100vh', overflow: 'hidden' }}>
-            {/* TOP BAR - INFO SYSTÈME */}
-            <div className="status-bar">
-                <div>MONOLITH OS v4.0 // {nodes.length} PROCESSUS</div>
-                <div>{time} // MEM: OK // ROOT_ACCESS</div>
-            </div>
-
-            {/* ESPACE DE TRAVAIL */}
-            <div id="canvas" style={{ 
-                transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)`,
-                cursor: 'default'
-            }}>
-                {nodes.map(node => (
-                    <div 
-                        key={node.id}
-                        className={`window win-anim ${selection.includes(node.id) ? 'selected' : ''}`}
-                        style={{ left: node.x, top: node.y, width: node.w, height: node.h, zIndex: selection.includes(node.id) ? 999 : 10 }}
-                        onMouseDown={() => setSelection([node.id])}
-                    >
-                        <div className="win-header" onMouseDown={(e) => handleDrag(node.id, e)}>
-                            <span>{node.title}</span>
-                            <div style={{ display: 'flex', gap: '10px' }}>
-                                <button onClick={() => updateNode(node.id, { locked: !node.locked })} style={{ background: 'none', border: 'none', fontWeight: 'bold' }}>
-                                    {node.locked ? 'LOCKED' : 'FREE'}
-                                </button>
-                                <button onClick={() => deleteNode(node.id)} style={{ background: 'none', border: 'none', fontWeight: 'bold' }}>[X]</button>
-                            </div>
-                        </div>
-                        <div className="win-content">
-                            {node.type === 'TEXT' && (
-                                <textarea 
-                                    value={node.content} 
-                                    placeholder="ÉCRIRE..." 
-                                    onChange={(e) => updateNode(node.id, { content: e.target.value })}
-                                />
-                            )}
-                            {node.type === 'CODE' && (
-                                <textarea 
-                                    style={{ fontFamily: 'monospace', fontSize: '12px' }}
-                                    value={node.content} 
-                                    placeholder="// SCRIPT JS..." 
-                                    onChange={(e) => updateNode(node.id, { content: e.target.value })}
-                                />
-                            )}
-                            {node.type === 'TERMINAL' && (
-                                <div style={{ fontSize: '12px', color: '#fff', height: '100%' }}>
-                                    <div>> system.init()...</div>
-                                    <div>> nodes_active: {nodes.length}</div>
-                                    <div>> session_stable: true</div>
-                                    <div style={{ marginTop: '10px', borderTop: '1px solid #333' }}>
-                                        $ <input style={{ width: '80%' }} autoFocus />
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                        {/* Resize handle (Simplifié) */}
-                        <div 
-                            style={{ position: 'absolute', bottom: 0, right: 0, width: 15, height: 15, cursor: 'nwse-resize', background: 'var(--fg)' }}
-                            onMouseDown={(e) => {
-                                e.stopPropagation();
-                                const startX = e.clientX;
-                                const startW = node.w;
-                                const onMove = (me) => updateNode(node.id, { w: startW + (me.clientX - startX) });
-                                const onUp = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
-                                window.addEventListener('mousemove', onMove);
-                                window.addEventListener('mouseup', onUp);
-                            }}
+            return (
+                <div className="terminal">
+                    {history.map((h, i) => <div key={i}>{h}</div>)}
+                    <div style={{display:'flex'}}>
+                        <span>$ &nbsp;</span>
+                        <input 
+                            className="terminal" 
+                            style={{border:'none', outline:'none', flex:1}} 
+                            value={input} 
+                            onChange={e => setInput(e.target.value)}
+                            onKeyDown={execute}
+                            autoFocus
                         />
                     </div>
-                ))}
-            </div>
+                </div>
+            );
+        };
 
-            {/* BARRE D'OUTILS (100+ Fonctions via les types et interactions) */}
-            <div className="toolbar">
-                <button className="tool-btn" onClick={() => addNode('TEXT')}>+ Note</button>
-                <button className="tool-btn" onClick={() => addNode('CODE')}>+ Code</button>
-                <button className="tool-btn" onClick={() => addNode('TERMINAL')}>+ Terminal</button>
-                <div style={{ width: '2px', background: 'var(--fg)' }}></div>
-                <button className="tool-btn" onClick={() => setZoom(z => z + 0.1)}>Zoom +</button>
-                <button className="tool-btn" onClick={() => setZoom(z => z - 0.1)}>Zoom -</button>
-                <button className="tool-btn" onClick={() => setNodes([])}>WIPE ALL</button>
-            </div>
-        </div>
-    );
-};
+        const DrawWidget = () => {
+            const canvasRef = useRef(null);
+            const [drawing, setDrawing] = useState(false);
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App />);
-</script>
+            useEffect(() => {
+                const ctx = canvasRef.current.getContext('2d');
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+            }, []);
+
+            const draw = (e) => {
+                if (!drawing) return;
+                const ctx = canvasRef.current.getContext('2d');
+                const rect = canvasRef.current.getBoundingClientRect();
+                ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+                ctx.stroke();
+            };
+
+            return (
+                <div style={{height:'100%', display:'flex', flexDirection:'column'}}>
+                    <div style={{marginBottom:5, display:'flex', gap:5}}>
+                        <button className="btn-ui" onClick={() => {
+                            const ctx = canvasRef.current.getContext('2d');
+                            ctx.clearRect(0, 0, 1000, 1000);
+                        }}>Nettoyer</button>
+                    </div>
+                    <canvas 
+                        ref={canvasRef} 
+                        width="800" height="800" 
+                        className="drawing-area"
+                        onMouseDown={(e) => { setDrawing(true); canvasRef.current.getContext('2d').beginPath(); }}
+                        onMouseMove={draw}
+                        onMouseUp={() => setDrawing(false)}
+                    />
+                </div>
+            );
+        };
+
+        // --- CORE APPLICATION ---
+
+        const App = () => {
+            const [windows, setWindows] = useState([
+                { id: '1', type: 'TERMINAL', x: 50, y: 50, w: 600, h: 350, z: 10, active: true }
+            ]);
+            const [time, setTime] = useState(new Date().toLocaleTimeString());
+            const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+            useEffect(() => {
+                const i = setInterval(() => setTime(new Date().toLocaleTimeString()), 1000);
+                return () => clearInterval(i);
+            }, []);
+
+            const addWindow = (type) => {
+                const id = Date.now().toString();
+                const config = WIDGETS[type];
+                setWindows([...windows.map(w => ({...w, active: false})), {
+                    id, type, x: 100 + (windows.length * 20), y: 100 + (windows.length * 20),
+                    w: config.w, h: config.h, z: windows.length + 100, active: true, content: ""
+                }]);
+                setIsMenuOpen(false);
+            };
+
+            const updateWin = (id, data) => setWindows(ws => ws.map(w => w.id === id ? {...w, ...data} : w));
+            const closeWin = (id) => setWindows(ws => ws.filter(w => w.id !== id));
+            
+            const focusWin = (id) => {
+                setWindows(ws => ws.map(w => ({
+                    ...w, 
+                    active: w.id === id,
+                    z: w.id === id ? Math.max(...ws.map(win => win.z)) + 1 : w.z
+                })));
+            };
+
+            const handleDrag = (id, e) => {
+                focusWin(id);
+                const win = windows.find(w => w.id === id);
+                const startX = e.clientX - win.x;
+                const startY = e.clientY - win.y;
+
+                const move = (me) => {
+                    // Snapping à 10px
+                    const nx = Math.round((me.clientX - startX) / 10) * 10;
+                    const ny = Math.round((me.clientY - startY) / 10) * 10;
+                    updateWin(id, { x: nx, y: ny });
+                };
+                const stop = () => {
+                    window.removeEventListener('mousemove', move);
+                    window.removeEventListener('mouseup', stop);
+                };
+                window.addEventListener('mousemove', move);
+                window.addEventListener('mouseup', stop);
+            };
+
+            return (
+                <div id="desktop">
+                    {/* WINDOWS RENDERER */}
+                    {windows.map(win => (
+                        <div 
+                            key={win.id} 
+                            className={`win ${win.active ? 'active' : ''}`}
+                            style={{ 
+                                left: win.x, top: win.y, 
+                                width: win.w, height: win.h, 
+                                zIndex: win.z 
+                            }}
+                            onMouseDown={() => focusWin(win.id)}
+                        >
+                            <div className="win-bar" onMouseDown={(e) => handleDrag(win.id, e)}>
+                                <span>{WIDGETS[win.type].icon} {WIDGETS[win.type].title}</span>
+                                <div className="win-btn-group">
+                                    <button className="win-btn" onClick={() => updateWin(win.id, {w: 800, h: 600})}>□</button>
+                                    <button className="win-btn" onClick={() => closeWin(win.id)}>×</button>
+                                </div>
+                            </div>
+                            <div className="win-body">
+                                {win.type === 'TEXT' && <textarea placeholder="Note..." value={win.content} onChange={e => updateWin(win.id, {content: e.target.value})} />}
+                                {win.type === 'TERMINAL' && <TerminalWidget onAddNode={addWindow} />}
+                                {win.type === 'DRAW' && <DrawWidget />}
+                                {win.type === 'CLOCK' && (
+                                    <div style={{textAlign:'center', paddingTop:20}}>
+                                        <h2 style={{fontSize:40, fontFamily:'JetBrains Mono'}}>{time}</h2>
+                                        <p>UTC {new Date().getTimezoneOffset()/60}</p>
+                                    </div>
+                                )}
+                                {win.type === 'TODO' && (
+                                    <div style={{fontFamily:'JetBrains Mono'}}>
+                                        <h3>TASKS:</h3>
+                                        <textarea placeholder="1. Design OS&#10;2. Fix Bugs..." />
+                                    </div>
+                                )}
+                            </div>
+                            {/* RESIZE HANDLE */}
+                            <div 
+                                style={{position:'absolute', bottom:0, right:0, width:15, height:15, cursor:'nwse-resize', background:'var(--fg)'}}
+                                onMouseDown={(e) => {
+                                    e.stopPropagation();
+                                    const startW = win.w; const startH = win.h;
+                                    const startX = e.clientX; const startY = e.clientY;
+                                    const rs = (me) => updateWin(win.id, { w: startW + (me.clientX-startX), h: startH + (me.clientY-startY) });
+                                    const rstop = () => { window.removeEventListener('mousemove', rs); window.removeEventListener('mouseup', rstop); };
+                                    window.addEventListener('mousemove', rs); window.addEventListener('mouseup', rstop);
+                                }}
+                            />
+                        </div>
+                    ))}
+
+                    {/* MENU DEMARRER */}
+                    {isMenuOpen && (
+                        <div className="win" style={{position:'fixed', bottom:50, left:10, width:200, zIndex:10000, padding:10}}>
+                            <div style={{display:'flex', flexDirection:'column', gap:8}}>
+                                {Object.keys(WIDGETS).map(k => (
+                                    <button key={k} className="btn-ui" onClick={() => addWindow(k)}>{WIDGETS[k].icon} {WIDGETS[k].title}</button>
+                                ))}
+                                <hr style={{borderColor:'#333'}} />
+                                <button className="btn-ui" style={{color:'#ff4444'}} onClick={() => setWindows([])}>Wipe Memory</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* TASKBAR */}
+                    <footer id="taskbar">
+                        <button className="btn-ui" style={{fontWeight:'bold'}} onClick={() => setIsMenuOpen(!isMenuOpen)}>
+                            {isMenuOpen ? "CLOSE" : "START"}
+                        </button>
+                        <div style={{flex:1, display:'flex', gap:10}}>
+                            {windows.map(w => (
+                                <button 
+                                    key={w.id} 
+                                    className="btn-ui" 
+                                    style={{borderColor: w.active ? '#fff' : '#444'}}
+                                    onClick={() => focusWin(w.id)}
+                                >
+                                    {WIDGETS[w.type].icon}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="sys-clock">{time}</div>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
 </body>
 </html>
