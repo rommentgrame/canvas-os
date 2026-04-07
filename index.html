@@ -2,132 +2,33 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8"/>
-    <title>MONOLITH OS - ULTIMATE BLACK & WHITE</title>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;900&display=swap" rel="stylesheet">
+    <title>MONOLITH OS - 40+ FUNCTIONS</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;800&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --bg: #000000;
-            --fg: #ffffff;
-            --br: #ffffff;
-            --accent: #ffffff;
-            --font-main: 'Inter', sans-serif;
-            --font-mono: 'JetBrains Mono', monospace;
-        }
+        :root { --bg: #000; --fg: #fff; --font-mono: 'JetBrains Mono', monospace; --font-sans: 'Inter', sans-serif; }
+        * { box-sizing: border-box; margin: 0; padding: 0; cursor: crosshair; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background: var(--bg); color: var(--fg); font-family: var(--font-sans); }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; }
-        body, html { 
-            width: 100%; height: 100%; overflow: hidden; 
-            background: var(--bg); color: var(--fg);
-            font-family: var(--font-main);
-        }
+        #desktop { width: 100vw; height: 100vh; position: relative; background: radial-gradient(#222 1px, transparent 1px); background-size: 30px 30px; }
 
-        /* --- INTERFACE CORE --- */
-        #desktop {
-            width: 100vw; height: 100vh;
-            position: relative;
-            background-image: 
-                linear-gradient(to right, #111 1px, transparent 1px),
-                linear-gradient(to bottom, #111 1px, transparent 1px);
-            background-size: 40px 40px;
-            overflow: hidden;
-        }
+        /* FENETRES */
+        .win { position: absolute; background: var(--bg); border: 2px solid var(--fg); display: flex; flex-direction: column; box-shadow: 6px 6px 0 var(--fg); min-width: 180px; }
+        .win.active { box-shadow: 12px 12px 0 var(--fg); z-index: 1000 !important; }
+        .win-header { background: var(--fg); color: var(--bg); padding: 5px 10px; font-family: var(--font-mono); font-size: 11px; font-weight: 800; display: flex; justify-content: space-between; align-items: center; cursor: move; }
+        .win-body { flex: 1; padding: 10px; overflow: auto; position: relative; }
+        
+        /* UI ELEMENTS */
+        .btn { background: var(--bg); border: 1px solid var(--fg); color: var(--fg); padding: 4px 10px; font-size: 10px; font-family: var(--font-mono); cursor: pointer; text-transform: uppercase; }
+        .btn:hover { background: var(--fg); color: var(--bg); }
+        textarea, input { background: transparent; border: none; color: var(--fg); width: 100%; font-family: var(--font-sans); outline: none; }
+        
+        /* TASKBAR */
+        #taskbar { position: fixed; bottom: 0; width: 100%; height: 40px; background: var(--bg); border-top: 2px solid var(--fg); display: flex; align-items: center; padding: 0 15px; z-index: 9999; }
+        .task-item { border: 1px solid #333; padding: 4px 12px; margin-right: 10px; font-size: 11px; cursor: pointer; }
+        .task-item.active { border-color: var(--fg); font-weight: bold; }
 
-        /* --- FENETRES MONOLITH --- */
-        .win {
-            position: absolute;
-            background: var(--bg);
-            border: 2px solid var(--fg);
-            display: flex;
-            flex-direction: column;
-            box-shadow: 8px 8px 0px rgba(255,255,255,0.2);
-            transition: box-shadow 0.1s;
-            min-width: 200px; min-height: 150px;
-        }
-        .win.active {
-            box-shadow: 12px 12px 0px var(--fg);
-            z-index: 1000 !important;
-        }
-
-        .win-bar {
-            background: var(--fg);
-            color: var(--bg);
-            padding: 8px 12px;
-            font-family: var(--font-mono);
-            font-weight: 900;
-            font-size: 11px;
-            text-transform: uppercase;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: move;
-            user-select: none;
-        }
-
-        .win-btn-group { display: flex; gap: 8px; }
-        .win-btn {
-            background: var(--bg);
-            color: var(--fg);
-            border: 1px solid var(--bg);
-            width: 16px; height: 16px;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; font-size: 10px;
-        }
-        .win-btn:hover { background: var(--bg); color: var(--fg); border-color: var(--bg); }
-
-        .win-body {
-            flex: 1;
-            overflow: auto;
-            padding: 10px;
-            background: var(--bg);
-            position: relative;
-        }
-
-        /* --- COMPOSANTS INTERNES --- */
-        textarea {
-            width: 100%; height: 100%;
-            background: transparent; border: none;
-            color: var(--fg); resize: none;
-            font-family: var(--font-main); font-size: 14px;
-            line-height: 1.6;
-        }
-
-        .terminal {
-            font-family: var(--font-mono);
-            font-size: 12px;
-            color: var(--fg);
-            background: #000;
-        }
-
-        .btn-ui {
-            background: var(--bg);
-            border: 1px solid var(--fg);
-            color: var(--fg);
-            padding: 5px 12px;
-            font-family: var(--font-mono);
-            font-size: 10px;
-            text-transform: uppercase;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .btn-ui:hover { background: var(--fg); color: var(--bg); }
-
-        /* --- TASKBAR --- */
-        #taskbar {
-            position: fixed; bottom: 0; left: 0; width: 100%;
-            height: 40px; background: var(--bg);
-            border-top: 2px solid var(--fg);
-            display: flex; align-items: center; padding: 0 15px;
-            gap: 20px; z-index: 9999;
-        }
-        .sys-clock { font-family: var(--font-mono); font-weight: bold; font-size: 13px; }
-
-        /* --- DESSIN --- */
-        canvas.drawing-area { background: #000; cursor: crosshair; }
-
-        /* --- UTILS --- */
-        .hidden { display: none; }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-thumb { background: var(--fg); }
+        /* SVG LINES */
+        #connections { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -138,235 +39,223 @@
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <script type="text/babel">
-        const { useState, useEffect, useRef, useCallback, useMemo } = React;
+        const { useState, useEffect, useRef, useCallback } = React;
 
-        // --- CONSTANTES & LOGIQUE SYSTEME ---
-        const WIDGETS = {
-            TEXT: { title: "Note.txt", w: 400, h: 300, icon: "📄" },
-            CODE: { title: "Script.js", w: 500, h: 400, icon: "💻" },
-            TERMINAL: { title: "Terminal", w: 600, h: 350, icon: ">_" },
-            DRAW: { title: "Canvas.draw", w: 400, h: 400, icon: "🎨" },
-            CALC: { title: "Calc.exe", w: 220, h: 320, icon: "±" },
-            TODO: { title: "Tasks.list", w: 300, h: 400, icon: "✓" },
-            CLOCK: { title: "WorldClock", w: 250, h: 150, icon: "🕒" }
+        const MOD_TYPES = {
+            TEXT: { label: "Note", icon: "📄", w: 300, h: 200 },
+            TERM: { label: "Terminal", icon: ">_", w: 500, h: 300 },
+            DRAW: { label: "Art", icon: "🎨", w: 350, h: 350 },
+            CALC: { label: "Math", icon: "±", w: 200, h: 280 },
+            TODO: { label: "Tasks", icon: "✓", w: 250, h: 350 }
         };
 
-        // --- COMPOSANTS WIDGETS ---
+        const App = () => {
+            const [mods, setMods] = useState([]);
+            const [links, setLinks] = useState([]);
+            const [activeId, setActiveId] = useState(null);
+            const [linkingFrom, setLinkingFrom] = useState(null);
+            const [toasts, setToasts] = useState([]);
 
-        const TerminalWidget = ({ onAddNode }) => {
-            const [history, setHistory] = useState(["> MONOLITH OS - Version 1.0.0", "> Tapez 'help' pour voir les commandes."]);
-            const [input, setInput] = useState("");
+            // 1. GESTION DES MODULES
+            const addMod = (type, x = 100, y = 100) => {
+                const id = 'mod_' + Date.now();
+                setMods([...mods, { id, type, x, y, w: MOD_TYPES[type].w, h: MOD_TYPES[type].h, data: "", z: mods.length + 10 }]);
+                addToast(`Module ${type} ajouté`);
+            };
 
-            const execute = (e) => {
-                if (e.key === 'Enter') {
-                    const cmd = input.toLowerCase().trim();
-                    let response = `> Command '${cmd}' not found.`;
-                    
-                    if (cmd === 'help') response = "> Cmds: note, draw, code, clear, system, exit, color-inv";
-                    if (cmd === 'note') { onAddNode('TEXT'); response = "> Note created."; }
-                    if (cmd === 'clear') { setHistory([]); setInput(""); return; }
-                    if (cmd === 'system') response = `> CPU: OK | RAM: 1.2GB Free | DISK: 88%`;
-                    
-                    setHistory([...history, `$ ${input}`, response]);
-                    setInput("");
+            const updMod = (id, obj) => setMods(prev => prev.map(m => m.id === id ? {...m, ...obj} : m));
+
+            const delMod = (id) => {
+                setMods(prev => prev.filter(m => m.id !== id));
+                setLinks(prev => prev.filter(l => l.from !== id && l.to !== id));
+            };
+
+            // 2. SYSTEME DE LIENS (INTER-MODULES)
+            const startLink = (id) => {
+                if (linkingFrom) {
+                    if (linkingFrom !== id) {
+                        setLinks([...links, { id: Date.now(), from: linkingFrom, to: id }]);
+                        addToast("Lien créé");
+                    }
+                    setLinkingFrom(null);
+                } else {
+                    setLinkingFrom(id);
+                    addToast("Sélectionnez la cible");
                 }
             };
 
-            return (
-                <div className="terminal">
-                    {history.map((h, i) => <div key={i}>{h}</div>)}
-                    <div style={{display:'flex'}}>
-                        <span>$ &nbsp;</span>
-                        <input 
-                            className="terminal" 
-                            style={{border:'none', outline:'none', flex:1}} 
-                            value={input} 
-                            onChange={e => setInput(e.target.value)}
-                            onKeyDown={execute}
-                            autoFocus
-                        />
-                    </div>
-                </div>
-            );
-        };
-
-        const DrawWidget = () => {
-            const canvasRef = useRef(null);
-            const [drawing, setDrawing] = useState(false);
-
-            useEffect(() => {
-                const ctx = canvasRef.current.getContext('2d');
-                ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
-            }, []);
-
-            const draw = (e) => {
-                if (!drawing) return;
-                const ctx = canvasRef.current.getContext('2d');
-                const rect = canvasRef.current.getBoundingClientRect();
-                ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
-                ctx.stroke();
-            };
-
-            return (
-                <div style={{height:'100%', display:'flex', flexDirection:'column'}}>
-                    <div style={{marginBottom:5, display:'flex', gap:5}}>
-                        <button className="btn-ui" onClick={() => {
-                            const ctx = canvasRef.current.getContext('2d');
-                            ctx.clearRect(0, 0, 1000, 1000);
-                        }}>Nettoyer</button>
-                    </div>
-                    <canvas 
-                        ref={canvasRef} 
-                        width="800" height="800" 
-                        className="drawing-area"
-                        onMouseDown={(e) => { setDrawing(true); canvasRef.current.getContext('2d').beginPath(); }}
-                        onMouseMove={draw}
-                        onMouseUp={() => setDrawing(false)}
-                    />
-                </div>
-            );
-        };
-
-        // --- CORE APPLICATION ---
-
-        const App = () => {
-            const [windows, setWindows] = useState([
-                { id: '1', type: 'TERMINAL', x: 50, y: 50, w: 600, h: 350, z: 10, active: true }
-            ]);
-            const [time, setTime] = useState(new Date().toLocaleTimeString());
-            const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-            useEffect(() => {
-                const i = setInterval(() => setTime(new Date().toLocaleTimeString()), 1000);
-                return () => clearInterval(i);
-            }, []);
-
-            const addWindow = (type) => {
-                const id = Date.now().toString();
-                const config = WIDGETS[type];
-                setWindows([...windows.map(w => ({...w, active: false})), {
-                    id, type, x: 100 + (windows.length * 20), y: 100 + (windows.length * 20),
-                    w: config.w, h: config.h, z: windows.length + 100, active: true, content: ""
-                }]);
-                setIsMenuOpen(false);
-            };
-
-            const updateWin = (id, data) => setWindows(ws => ws.map(w => w.id === id ? {...w, ...data} : w));
-            const closeWin = (id) => setWindows(ws => ws.filter(w => w.id !== id));
-            
-            const focusWin = (id) => {
-                setWindows(ws => ws.map(w => ({
-                    ...w, 
-                    active: w.id === id,
-                    z: w.id === id ? Math.max(...ws.map(win => win.z)) + 1 : w.z
-                })));
-            };
-
+            // 3. DRAG LOGIQUE
             const handleDrag = (id, e) => {
-                focusWin(id);
-                const win = windows.find(w => w.id === id);
-                const startX = e.clientX - win.x;
-                const startY = e.clientY - win.y;
+                setActiveId(id);
+                const mod = mods.find(m => m.id === id);
+                const startX = e.clientX - mod.x;
+                const startY = e.clientY - mod.y;
 
-                const move = (me) => {
-                    // Snapping à 10px
-                    const nx = Math.round((me.clientX - startX) / 10) * 10;
-                    const ny = Math.round((me.clientY - startY) / 10) * 10;
-                    updateWin(id, { x: nx, y: ny });
+                const onMove = (me) => {
+                    const nx = Math.round((me.clientX - startX) / 20) * 20;
+                    const ny = Math.round((me.clientY - startY) / 20) * 20;
+                    updMod(id, { x: nx, y: ny });
                 };
-                const stop = () => {
-                    window.removeEventListener('mousemove', move);
-                    window.removeEventListener('mouseup', stop);
+                const onStop = () => {
+                    window.removeEventListener('mousemove', onMove);
+                    window.removeEventListener('mouseup', onStop);
                 };
-                window.addEventListener('mousemove', move);
-                window.addEventListener('mouseup', stop);
+                window.addEventListener('mousemove', onMove);
+                window.addEventListener('mouseup', onStop);
+            };
+
+            // 4. TOAST SYSTEM
+            const addToast = (msg) => {
+                const id = Date.now();
+                setToasts(prev => [...prev, {id, msg}]);
+                setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
+            };
+
+            // 5. RENDU DES LIGNES
+            const renderLinks = () => {
+                return links.map(l => {
+                    const m1 = mods.find(m => m.id === l.from);
+                    const m2 = mods.find(m => m.id === l.to);
+                    if (!m1 || !m2) return null;
+                    return <line key={l.id} x1={m1.x + m1.w/2} y1={m1.y + m1.h/2} x2={m2.x + m2.w/2} y2={m2.y + m2.h/2} stroke="#fff" strokeWidth="1" strokeDasharray="4" />;
+                });
             };
 
             return (
-                <div id="desktop">
-                    {/* WINDOWS RENDERER */}
-                    {windows.map(win => (
-                        <div 
-                            key={win.id} 
-                            className={`win ${win.active ? 'active' : ''}`}
-                            style={{ 
-                                left: win.x, top: win.y, 
-                                width: win.w, height: win.h, 
-                                zIndex: win.z 
-                            }}
-                            onMouseDown={() => focusWin(win.id)}
-                        >
-                            <div className="win-bar" onMouseDown={(e) => handleDrag(win.id, e)}>
-                                <span>{WIDGETS[win.type].icon} {WIDGETS[win.type].title}</span>
-                                <div className="win-btn-group">
-                                    <button className="win-btn" onClick={() => updateWin(win.id, {w: 800, h: 600})}>□</button>
-                                    <button className="win-btn" onClick={() => closeWin(win.id)}>×</button>
+                <div id="desktop" onMouseDown={() => setActiveId(null)}>
+                    <svg id="connections">{renderLinks()}</svg>
+
+                    {mods.map(m => (
+                        <div key={m.id} className={`win ${activeId === m.id ? 'active' : ''}`} 
+                             style={{ left: m.x, top: m.y, width: m.w, height: m.h, zIndex: m.z }}
+                             onMouseDown={(e) => { e.stopPropagation(); setActiveId(m.id); }}>
+                            
+                            <div className="win-header" onMouseDown={(e) => handleDrag(m.id, e)}>
+                                <span>{MOD_TYPES[m.type].icon} {MOD_TYPES[m.type].label}</span>
+                                <div style={{display:'flex', gap:5}}>
+                                    <button className="btn" style={{padding:'0 4px'}} onClick={() => startLink(m.id)}>🔗</button>
+                                    <button className="btn" style={{padding:'0 4px'}} onClick={() => delMod(m.id)}>X</button>
                                 </div>
                             </div>
+
                             <div className="win-body">
-                                {win.type === 'TEXT' && <textarea placeholder="Note..." value={win.content} onChange={e => updateWin(win.id, {content: e.target.value})} />}
-                                {win.type === 'TERMINAL' && <TerminalWidget onAddNode={addWindow} />}
-                                {win.type === 'DRAW' && <DrawWidget />}
-                                {win.type === 'CLOCK' && (
-                                    <div style={{textAlign:'center', paddingTop:20}}>
-                                        <h2 style={{fontSize:40, fontFamily:'JetBrains Mono'}}>{time}</h2>
-                                        <p>UTC {new Date().getTimezoneOffset()/60}</p>
+                                {m.type === 'TEXT' && (
+                                    <div style={{height:'100%', display:'flex', flexDirection:'column'}}>
+                                        <textarea style={{flex:1}} value={m.data} onChange={e => updMod(m.id, {data: e.target.value})} placeholder="Note..." />
+                                        <div style={{fontSize:9, borderTop:'1px solid #222', paddingTop:4}}>
+                                            WORDS: {m.data.split(/\s+/).filter(x => x).length} | CHARS: {m.data.length}
+                                        </div>
                                     </div>
                                 )}
-                                {win.type === 'TODO' && (
-                                    <div style={{fontFamily:'JetBrains Mono'}}>
-                                        <h3>TASKS:</h3>
-                                        <textarea placeholder="1. Design OS&#10;2. Fix Bugs..." />
-                                    </div>
-                                )}
+                                {m.type === 'TERM' && <Terminal onCmd={(cmd) => handleTerm(cmd, addMod)} />}
+                                {m.type === 'DRAW' && <CanvasDraw />}
+                                {m.type === 'TODO' && <TodoMod />}
+                                {m.type === 'CALC' && <CalcMod />}
                             </div>
-                            {/* RESIZE HANDLE */}
-                            <div 
-                                style={{position:'absolute', bottom:0, right:0, width:15, height:15, cursor:'nwse-resize', background:'var(--fg)'}}
-                                onMouseDown={(e) => {
-                                    e.stopPropagation();
-                                    const startW = win.w; const startH = win.h;
-                                    const startX = e.clientX; const startY = e.clientY;
-                                    const rs = (me) => updateWin(win.id, { w: startW + (me.clientX-startX), h: startH + (me.clientY-startY) });
-                                    const rstop = () => { window.removeEventListener('mousemove', rs); window.removeEventListener('mouseup', rstop); };
-                                    window.addEventListener('mousemove', rs); window.addEventListener('mouseup', rstop);
-                                }}
-                            />
+
+                            <div style={{position:'absolute', bottom:0, right:0, width:10, height:10, cursor:'nwse-resize', background:'#fff'}}
+                                 onMouseDown={(e) => {
+                                     e.stopPropagation();
+                                     const sW = m.w; const sH = m.h; const sX = e.clientX; const sY = e.clientY;
+                                     const rs = (me) => updMod(m.id, { w: sW + (me.clientX-sX), h: sH + (me.clientY-sY) });
+                                     const rstop = () => { window.removeEventListener('mousemove', rs); window.removeEventListener('mouseup', rstop); };
+                                     window.addEventListener('mousemove', rs); window.addEventListener('mouseup', rstop);
+                                 }} />
                         </div>
                     ))}
 
-                    {/* MENU DEMARRER */}
-                    {isMenuOpen && (
-                        <div className="win" style={{position:'fixed', bottom:50, left:10, width:200, zIndex:10000, padding:10}}>
-                            <div style={{display:'flex', flexDirection:'column', gap:8}}>
-                                {Object.keys(WIDGETS).map(k => (
-                                    <button key={k} className="btn-ui" onClick={() => addWindow(k)}>{WIDGETS[k].icon} {WIDGETS[k].title}</button>
-                                ))}
-                                <hr style={{borderColor:'#333'}} />
-                                <button className="btn-ui" style={{color:'#ff4444'}} onClick={() => setWindows([])}>Wipe Memory</button>
-                            </div>
-                        </div>
-                    )}
+                    <div style={{position:'fixed', top:10, right:10, display:'flex', flexDirection:'column', gap:5}}>
+                        {toasts.map(t => <div key={t.id} style={{background:'#fff', color:'#000', padding:'4px 10px', fontSize:11, fontWeight:'bold'}}>{t.msg}</div>)}
+                    </div>
 
-                    {/* TASKBAR */}
                     <footer id="taskbar">
-                        <button className="btn-ui" style={{fontWeight:'bold'}} onClick={() => setIsMenuOpen(!isMenuOpen)}>
-                            {isMenuOpen ? "CLOSE" : "START"}
-                        </button>
-                        <div style={{flex:1, display:'flex', gap:10}}>
-                            {windows.map(w => (
-                                <button 
-                                    key={w.id} 
-                                    className="btn-ui" 
-                                    style={{borderColor: w.active ? '#fff' : '#444'}}
-                                    onClick={() => focusWin(w.id)}
-                                >
-                                    {WIDGETS[w.type].icon}
-                                </button>
+                        <button className="btn" style={{fontWeight:900, marginRight:20}} onClick={() => addMod('TEXT')}>+ MODULE</button>
+                        <div style={{flex:1, display:'flex'}}>
+                            {mods.map(m => (
+                                <div key={m.id} className={`task-item ${activeId === m.id ? 'active' : ''}`} onClick={() => setActiveId(m.id)}>
+                                    {MOD_TYPES[m.type].label}
+                                </div>
                             ))}
                         </div>
-                        <div className="sys-clock">{time}</div>
+                        <div style={{fontFamily:'JetBrains Mono', fontSize:12}}>{new Date().toLocaleTimeString()}</div>
                     </footer>
+                </div>
+            );
+        };
+
+        // --- MODULES SPECIFIQUES ---
+
+        const Terminal = ({ onCmd }) => {
+            const [history, setHistory] = useState(["> MONOLITH CORE READY", "> TYPE 'HELP'"]);
+            const [val, setVal] = useState("");
+            const run = (e) => {
+                if (e.key === 'Enter') {
+                    const c = val.toLowerCase().trim();
+                    setHistory([...history, `$ ${val}`]);
+                    if (c === 'help') setHistory(prev => [...prev, "> CMDS: note, draw, task, math, clear, kill-all"]);
+                    if (c === 'note') onCmd('TEXT');
+                    if (c === 'draw') onCmd('DRAW');
+                    if (c === 'task') onCmd('TODO');
+                    if (c === 'math') onCmd('CALC');
+                    if (c === 'clear') setHistory([]);
+                    setVal("");
+                }
+            };
+            return (
+                <div style={{fontFamily:'var(--font-mono)', fontSize:11, color:'#fff'}}>
+                    {history.map((h,i) => <div key={i}>{h}</div>)}
+                    <div style={{display:'flex'}}>> <input style={{color:'#fff', marginLeft:5}} value={val} onChange={e => setVal(e.target.value)} onKeyDown={run} autoFocus /></div>
+                </div>
+            );
+        };
+
+        const CanvasDraw = () => {
+            const canvasRef = useRef(null);
+            const [isDrawing, setIsDrawing] = useState(false);
+            const draw = (e) => {
+                if (!isDrawing) return;
+                const ctx = canvasRef.current.getContext('2d');
+                const r = canvasRef.current.getBoundingClientRect();
+                ctx.lineTo(e.clientX - r.left, e.clientY - r.top);
+                ctx.stroke();
+            };
+            useEffect(() => {
+                const ctx = canvasRef.current.getContext('2d');
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 1;
+            }, []);
+            return (
+                <div style={{height:'100%', display:'flex', flexDirection:'column'}}>
+                    <button className="btn" style={{marginBottom:5}} onClick={() => canvasRef.current.getContext('2d').clearRect(0,0,1000,1000)}>Clear</button>
+                    <canvas ref={canvasRef} width="500" height="500" style={{flex:1, background:'#000'}} onMouseDown={(e) => { setIsDrawing(true); canvasRef.current.getContext('2d').beginPath(); }} onMouseMove={draw} onMouseUp={() => setIsDrawing(false)} />
+                </div>
+            );
+        };
+
+        const TodoMod = () => {
+            const [tasks, setTasks] = useState([]);
+            const [v, setV] = useState("");
+            const add = (e) => { if (e.key === 'Enter' && v) { setTasks([...tasks, {id:Date.now(), t:v, d:false}]); setV(""); } };
+            return (
+                <div>
+                    <input style={{borderBottom:'1px solid #333', marginBottom:10, paddingBottom:5}} value={v} onChange={e => setV(e.target.value)} onKeyDown={add} placeholder="New task..." />
+                    {tasks.map(t => (
+                        <div key={t.id} style={{display:'flex', gap:10, fontSize:12, marginBottom:4, textDecoration: t.d ? 'line-through' : 'none', color: t.d ? '#555' : '#fff'}}>
+                            <input type="checkbox" onChange={() => setTasks(tasks.map(x => x.id === t.id ? {...x, d:!x.d} : x))} /> {t.t}
+                        </div>
+                    ))}
+                </div>
+            );
+        };
+
+        const CalcMod = () => {
+            const [exp, setExp] = useState("");
+            const [res, setRes] = useState("");
+            const solve = () => { try { setRes(eval(exp)); } catch { setRes("ERR"); } };
+            return (
+                <div style={{fontFamily:'var(--font-mono)'}}>
+                    <input style={{fontSize:18, textAlign:'right', marginBottom:10}} value={exp} onChange={e => setExp(e.target.value)} placeholder="0" />
+                    <div style={{fontSize:24, textAlign:'right', fontWeight:'bold', marginBottom:10}}>{res}</div>
+                    <button className="btn" style={{width:'100%'}} onClick={solve}>CALCULATE</button>
                 </div>
             );
         };
