@@ -1,64 +1,71 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-    <title>Canvas OS - Pro Edition</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com"/>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet"/>
-    <style>
-        :root {
-            --bg-deep: #050508;
-            --bg-panel: #0d0d14;
-            --accent: #7c4dff;
-            --accent-glow: rgba(124, 77, 255, 0.3);
-            --text-main: #e2e2e9;
-            --text-dim: #8b8b9e;
-            --border: #1f1f2e;
-            --danger: #ff4d4d;
-            --success: #00e676;
-        }
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Canvas OS - Ultimate Edition</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+    --bg: #030305;
+    --panel: #0a0a12;
+    --accent: #007bff;
+    --accent-glow: rgba(0, 123, 255, 0.4);
+    --border: #1a1a2e;
+    --text: #ffffff;
+    --text-dim: #94a3b8;
+    --node-bg: rgba(15, 15, 25, 0.9);
+}
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body, html { 
-            width: 100%; height: 100%; overflow: hidden; 
-            background: var(--bg-deep); 
-            color: var(--text-main);
-            font-family: 'Inter', sans-serif;
-        }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { 
+    width: 100%; height: 100%; overflow: hidden; 
+    background: var(--bg); 
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+}
 
-        #root { width: 100%; height: 100%; display: flex; flex-direction: column; }
+#root { width: 100%; height: 100%; }
 
-        /* Scrollbar Style */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: var(--bg-deep); }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+/* Amélioration de la visibilité des textes */
+input, textarea, button { 
+    font-family: 'DM Sans', sans-serif; 
+    color: white;
+}
 
-        /* Animations */
-        @keyframes glow {
-            0% { box-shadow: 0 0 5px var(--accent-glow); }
-            50% { box-shadow: 0 0 20px var(--accent-glow); }
-            100% { box-shadow: 0 0 5px var(--accent-glow); }
-        }
+/* Scrollbar personnalisée et visible */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #050505; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; border: 2px solid #050505; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
-        .node-selected {
-            border: 2px solid var(--accent) !important;
-            animation: glow 2s infinite ease-in-out;
-        }
+/* Animation des nœuds */
+.node-enter { animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes popIn {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
 
-        .canvas-grid {
-            background-image: 
-                radial-gradient(circle, rgba(124, 77, 255, 0.1) 1px, transparent 1px);
-            background-size: 30px 30px;
-        }
+.grid-bg {
+    background-image: 
+        linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+}
 
-        .glass {
-            background: rgba(13, 13, 20, 0.8);
-            backdrop-filter: blur(12px);
-            border: 1px solid var(--border);
-        }
-    </style>
+.glass-morphism {
+    background: var(--node-bg);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+
+/* Styles pour le texte pour qu'il "pop" sur le noir */
+.text-glow {
+    text-shadow: 0 0 10px rgba(255,255,255,0.2);
+}
+</style>
 </head>
 <body>
 <div id="root"></div>
@@ -66,204 +73,241 @@
 <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<script src="https://unpkg.com/lucide@latest"></script>
 
 <script type="text/babel">
-const { useState, useRef, useEffect, useCallback, useMemo } = React;
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
 
-/* --- LOGIQUE ET CONSTANTES --- */
+// --- CONFIGURATION ET THEMES ---
+const COLORS = {
+    blue: "#007aff", green: "#34c759", red: "#ff3b30", 
+    yellow: "#ffcc00", purple: "#af52de", orange: "#ff9500"
+};
+
 const NODE_TYPES = {
-    TEXT: { label: 'Texte', icon: 'Type', color: '#7c4dff' },
-    NOTE: { label: 'Post-it', icon: 'StickyNote', color: '#ffc107' },
-    IMAGE: { label: 'Média', icon: 'Image', color: '#00e676' },
-    CODE: { label: 'Script', icon: 'Code', color: '#00bcd4' },
-    CLOCK: { label: 'Horloge', icon: 'Clock', color: '#ff5722' },
-    TABLE: { label: 'Données', icon: 'Table', color: '#e91e63' }
+    NOTE: { id: 'note', label: 'Note', icon: '📝', color: COLORS.blue },
+    TODO: { id: 'todo', label: 'Tâches', icon: '✅', color: COLORS.green },
+    CODE: { id: 'code', label: 'Code', icon: '💻', color: COLORS.purple },
+    SKETCH: { id: 'sketch', label: 'Dessin', icon: '🎨', color: COLORS.orange },
+    CLOCK: { id: 'clock', label: 'Horloge', icon: '⏰', color: COLORS.yellow },
+    WEB: { id: 'web', label: 'Navigateur', icon: '🌐', color: COLORS.blue }
 };
 
-const generateId = () => `node_${Math.random().toString(36).substr(2, 9)}`;
+// --- COMPOSANTS DE BASE ---
 
-/* --- COMPOSANTS UI RÉUTILISABLES --- */
-const Icon = ({ name, size = 18, color = "currentColor" }) => {
-    // Utilisation de Lucide Icons (simulation via SVG pour l'exemple)
-    return <i data-lucide={name} style={{ width: size, height: size, color }}></i>;
-};
+const IconButton = ({ icon, onClick, color = "white", size = "16px" }) => (
+    <button onClick={onClick} style={{
+        background: 'none', border: 'none', cursor: 'pointer',
+        fontSize: size, color: color, padding: '4px',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        borderRadius: '4px', transition: 'background 0.2s'
+    }} onMouseEnter={e => e.target.style.background = 'rgba(255,255,255,0.1)'}
+       onMouseLeave={e => e.target.style.background = 'none'}>
+        {icon}
+    </button>
+);
 
-/* --- COMPOSANT NODE (L'unité de base) --- */
-const CanvasNode = ({ node, isSelected, onSelect, onUpdate, onDrag }) => {
-    const nodeRef = useRef(null);
-    const [isDragging, setIsDragging] = useState(false);
+// --- WIDGETS SPÉCIFIQUES ---
 
-    const handleMouseDown = (e) => {
-        if (e.target.closest('.no-drag')) return;
-        setIsDragging(true);
-        onSelect(node.id, e.shiftKey);
-        
-        const startX = e.clientX - node.x;
-        const startY = e.clientY - node.y;
+const SketchPad = () => {
+    const canvasRef = useRef(null);
+    const [isDrawing, setIsDrawing] = useState(false);
 
-        const onMouseMove = (moveEvent) => {
-            onDrag(node.id, moveEvent.clientX - startX, moveEvent.clientY - startY);
-        };
+    useEffect(() => {
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        ctx.strokeStyle = '#007aff';
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+    }, []);
 
-        const onMouseUp = () => {
-            setIsDragging(false);
-            document.removeEventListener('mousemove', onMouseMove);
-            document.removeEventListener('mouseup', onMouseUp);
-        };
+    const startDrawing = (e) => {
+        const { offsetX, offsetY } = e.nativeEvent;
+        const ctx = canvasRef.current.getContext('2d');
+        ctx.beginPath();
+        ctx.moveTo(offsetX, offsetY);
+        setIsDrawing(true);
+    };
 
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
+    const draw = (e) => {
+        if (!isDrawing) return;
+        const { offsetX, offsetY } = e.nativeEvent;
+        const ctx = canvasRef.current.getContext('2d');
+        ctx.lineTo(offsetX, offsetY);
+        ctx.stroke();
     };
 
     return (
+        <canvas 
+            ref={canvasRef}
+            width="300" height="200"
+            style={{ width: '100%', height: '100%', background: '#111', cursor: 'crosshair' }}
+            onMouseDown={startDrawing}
+            onMouseMove={draw}
+            onMouseUp={() => setIsDrawing(false)}
+        />
+    );
+};
+
+// --- LE COMPOSANT NOEUD (TA LOGIQUE ORIGINALE AMÉLIORÉE) ---
+
+const Node = ({ node, isSelected, onSelect, onUpdate, onDelete }) => {
+    const [dragging, setDragging] = useState(false);
+    const [pos, setPos] = useState({ x: node.x, y: node.y });
+    const offset = useRef({ x: 0, y: 0 });
+
+    const handleMouseDown = (e) => {
+        if (e.target.closest('.no-drag')) return;
+        onSelect(node.id);
+        setDragging(true);
+        offset.current = { x: e.clientX - pos.x, y: e.clientY - pos.y };
+    };
+
+    useEffect(() => {
+        if (!dragging) return;
+        const move = (e) => {
+            const newX = e.clientX - offset.current.x;
+            const newY = e.clientY - offset.current.y;
+            setPos({ x: newX, y: newY });
+            onUpdate(node.id, { x: newX, y: newY });
+        };
+        const up = () => setDragging(false);
+        window.addEventListener('mousemove', move);
+        window.addEventListener('mouseup', up);
+        return () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); };
+    }, [dragging]);
+
+    return (
         <div 
-            ref={nodeRef}
-            className={`glass ${isSelected ? 'node-selected' : ''}`}
+            className="glass-morphism node-enter"
             style={{
-                position: 'absolute',
-                left: node.x,
-                top: node.y,
-                width: node.w,
-                height: node.h,
-                borderRadius: '12px',
-                zIndex: isSelected ? 100 : 1,
-                cursor: isDragging ? 'grabbing' : 'grab',
-                display: 'flex',
-                flexDirection: 'column',
-                transition: isDragging ? 'none' : 'border 0.2s'
+                position: 'absolute', left: pos.x, top: pos.y,
+                width: node.w || 300, height: node.h || 250,
+                zIndex: isSelected ? 100 : 10,
+                borderRadius: '12px', overflow: 'hidden',
+                border: isSelected ? `2px solid ${NODE_TYPES[node.type].color}` : '1px solid var(--border)',
+                display: 'flex', flexDirection: 'column'
             }}
             onMouseDown={handleMouseDown}
         >
-            {/* Header du Node */}
+            {/* Header */}
             <div style={{
-                padding: '8px 12px',
-                borderBottom: '1px solid var(--border)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                background: 'rgba(255,255,255,0.03)'
+                padding: '10px 15px', background: 'rgba(255,255,255,0.05)',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                borderBottom: '1px solid var(--border)'
             }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: NODE_TYPES[node.type]?.color }}></div>
-                    <span style={{ fontSize: '10px', fontWeight: 'bold', letterSpacing: '1px', color: 'var(--text-dim)' }}>
-                        {node.type}
-                    </span>
+                    <span>{NODE_TYPES[node.type].icon}</span>
+                    <span style={{ fontWeight: '600', fontSize: '13px', color: 'white' }}>{node.title || node.type}</span>
                 </div>
-                <div className="no-drag" style={{ opacity: 0.5 }}>
-                    <button onClick={() => onUpdate(node.id, { locked: !node.locked })} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
-                        {node.locked ? '🔒' : '🔓'}
-                    </button>
+                <div className="no-drag" style={{ display: 'flex', gap: '5px' }}>
+                    <IconButton icon="×" color="#ff4444" onClick={() => onDelete(node.id)} />
                 </div>
             </div>
 
-            {/* Contenu */}
-            <div className="no-drag" style={{ flex: 1, padding: '12px', overflow: 'hidden' }}>
-                {node.type === 'TEXT' && (
+            {/* Content */}
+            <div className="no-drag" style={{ flex: 1, padding: '15px', overflowY: 'auto' }}>
+                {node.type === 'NOTE' && (
                     <textarea 
-                        style={{ width: '100%', height: '100%', background: 'none', border: 'none', color: 'white', outline: 'none', resize: 'none' }}
+                        style={{ width: '100%', height: '100%', background: 'transparent', border: 'none', color: 'white', resize: 'none', outline: 'none', fontSize: '14px', lineHeight: '1.5' }}
                         value={node.content}
+                        placeholder="Écrivez quelque chose..."
                         onChange={(e) => onUpdate(node.id, { content: e.target.value })}
                     />
                 )}
+                {node.type === 'SKETCH' && <SketchPad />}
                 {node.type === 'CLOCK' && (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontSize: '2rem', fontFamily: 'Fira Code' }}>
-                        {new Date().toLocaleTimeString()}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                        <div style={{ fontSize: '3rem', fontWeight: '800', color: COLORS.yellow }}>
+                            {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                        <div style={{ color: 'var(--text-dim)' }}>{new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
                     </div>
+                )}
+                {node.type === 'CODE' && (
+                    <pre style={{ fontFamily: 'DM Mono', fontSize: '12px', color: '#a5d6ff' }}>
+                        <code>{`// Canvas OS Script\nfunction init() {\n  console.log("System Ready");\n}`}</code>
+                    </pre>
                 )}
             </div>
         </div>
     );
 };
 
-/* --- APPLICATION PRINCIPALE --- */
+// --- APP PRINCIPALE ---
+
 const App = () => {
     const [nodes, setNodes] = useState([
-        { id: '1', type: 'TEXT', x: 100, y: 100, w: 250, h: 150, content: 'Bienvenue dans Canvas OS Pro !', locked: false },
-        { id: '2', type: 'CLOCK', x: 400, y: 100, w: 250, h: 100, locked: false }
+        { id: '1', type: 'NOTE', x: 100, y: 100, w: 300, h: 200, content: 'Bienvenue dans ton nouveau Canvas ! Plus lisible et plus puissant.' },
+        { id: '2', type: 'CLOCK', x: 500, y: 100, w: 250, h: 150 }
     ]);
-    const [selectedIds, setSelectedIds] = useState([]);
-    const [zoom, setZoom] = useState(1);
-    const [pan, setPan] = useState({ x: 0, y: 0 });
-
-    // Fonctions de gestion
-    const handleDrag = (id, x, y) => {
-        setNodes(nds => nds.map(n => n.id === id ? { ...n, x, y } : n));
-    };
-
-    const updateNode = (id, data) => {
-        setNodes(nds => nds.map(n => n.id === id ? { ...n, ...data } : n));
-    };
+    const [selId, setSelId] = useState(null);
 
     const addNode = (type) => {
         const newNode = {
-            id: generateId(),
+            id: Date.now().toString(),
             type,
-            x: Math.random() * 500,
-            y: Math.random() * 500,
-            w: 250,
-            h: 150,
-            content: '',
-            locked: false
+            x: 50 + Math.random() * 200,
+            y: 50 + Math.random() * 200,
+            w: 300, h: 250,
+            content: ''
         };
         setNodes([...nodes, newNode]);
     };
 
-    // Rendu
+    const updateNode = (id, data) => {
+        setNodes(prev => prev.map(n => n.id === id ? { ...n, ...data } : n));
+    };
+
+    const deleteNode = (id) => {
+        setNodes(prev => prev.filter(n => n.id !== id));
+    };
+
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-            {/* TOP BAR */}
-            <header className="glass" style={{ height: '60px', display: 'flex', alignItems: 'center', padding: '0 20px', justifyContent: 'space-between', zIndex: 1000 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                    <h1 style={{ fontSize: '18px', fontWeight: '800', background: 'linear-gradient(to right, #7c4dff, #00e676)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                        CANVAS OS PRO
-                    </h1>
-                </div>
-                
-                <div style={{ display: 'flex', gap: '10px' }}>
-                    <button onClick={() => addNode('TEXT')} style={{ padding: '8px 15px', borderRadius: '6px', background: 'var(--accent)', color: 'white', border: 'none', cursor: 'pointer', fontWeight: '600' }}>
-                        + Note
-                    </button>
-                    <button onClick={() => addNode('CLOCK')} style={{ padding: '8px 15px', borderRadius: '6px', background: 'var(--border)', color: 'white', border: 'none', cursor: 'pointer' }}>
-                        + Horloge
-                    </button>
-                </div>
-            </header>
-
-            <main style={{ flex: 1, position: 'relative', overflow: 'hidden', background: 'var(--bg-deep)' }}>
-                {/* GRID LAYER */}
-                <div className="canvas-grid" style={{
-                    position: 'absolute',
-                    inset: 0,
-                    transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-                    transformOrigin: '0 0'
-                }}>
-                    {nodes.map(node => (
-                        <CanvasNode 
-                            key={node.id}
-                            node={node}
-                            isSelected={selectedIds.includes(node.id)}
-                            onSelect={(id, shift) => setSelectedIds(shift ? [...selectedIds, id] : [id])}
-                            onUpdate={updateNode}
-                            onDrag={handleDrag}
-                        />
-                    ))}
-                </div>
-
-                {/* ZOOM CONTROLS */}
-                <div style={{ position: 'absolute', bottom: '20px', right: '20px', display: 'flex', gap: '10px' }}>
-                    <div className="glass" style={{ padding: '10px', borderRadius: '8px', display: 'flex', gap: '15px', alignItems: 'center' }}>
-                        <button onClick={() => setZoom(z => Math.max(0.2, z - 0.1))} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>-</button>
-                        <span style={{ fontSize: '12px', fontFamily: 'Fira Code' }}>{Math.round(zoom * 100)}%</span>
-                        <button onClick={() => setZoom(z => Math.min(3, z + 0.1))} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>+</button>
+        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+            {/* BARRE DE MENU */}
+            <nav className="glass-morphism" style={{ height: '60px', zHeader: 1000, display: 'flex', alignItems: 'center', padding: '0 25px', justifyContent: 'space-between', borderBottom: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                    <div style={{ fontSize: '20px', fontWeight: '800', letterSpacing: '-1px' }}>
+                        CANVAS <span style={{ color: var(--accent) }}>OS</span>
+                    </div>
+                    <div style={{ width: '1px', height: '24px', background: 'var(--border)' }}></div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        {Object.values(NODE_TYPES).map(t => (
+                            <button key={t.id} onClick={() => addNode(t.id.toUpperCase())} style={{
+                                background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)',
+                                color: 'white', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer',
+                                fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px'
+                            }}>
+                                <span>{t.icon}</span> {t.label}
+                            </button>
+                        ))}
                     </div>
                 </div>
+            </nav>
+
+            {/* ZONE DE TRAVAIL */}
+            <main className="grid-bg" style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+                {nodes.map(n => (
+                    <Node 
+                        key={n.id} 
+                        node={n} 
+                        isSelected={selId === n.id}
+                        onSelect={setSelId}
+                        onUpdate={updateNode}
+                        onDelete={deleteNode}
+                    />
+                ))}
             </main>
 
-            {/* STATUS BAR */}
-            <footer style={{ height: '30px', background: 'rgba(0,0,0,0.5)', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', padding: '0 15px', fontSize: '11px', color: 'var(--text-dim)' }}>
-                <span>Objets: {nodes.length}</span>
-                <span style={{ marginLeft: '20px' }}>Système : Stable</span>
+            {/* BARRE D'ETAT */}
+            <footer style={{ height: '35px', background: '#000', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', padding: '0 20px', justifyContent: 'space-between' }}>
+                <div style={{ fontSize: '11px', color: 'var(--text-dim)', display: 'flex', gap: '15px' }}>
+                    <span>SYSTÈME : OPÉRATIONNEL</span>
+                    <span>NOEUDS : {nodes.length}</span>
+                </div>
+                <div style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
+                    {new Date().toLocaleDateString()}
+                </div>
             </footer>
         </div>
     );
