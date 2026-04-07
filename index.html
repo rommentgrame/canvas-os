@@ -3,68 +3,97 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Canvas OS - Ultimate Edition</title>
+<title>Canvas OS - Pro</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
 <style>
 :root {
-    --bg: #030305;
-    --panel: #0a0a12;
-    --accent: #007bff;
-    --accent-glow: rgba(0, 123, 255, 0.4);
-    --border: #1a1a2e;
+    --bg: #050505;
+    --panel: #0d0d12;
+    --accent: #3b82f6;
+    --border: #1e1e2e;
     --text: #ffffff;
-    --text-dim: #94a3b8;
-    --node-bg: rgba(15, 15, 25, 0.9);
+    --text-dim: #64748b;
+    --node-bg: #0f111a;
 }
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif}
+#root{width:100%;height:100%}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#2a2a3a;border-radius:10px}
+::-webkit-scrollbar-thumb:hover{background:var(--accent)}
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { 
-    width: 100%; height: 100%; overflow: hidden; 
-    background: var(--bg); 
-    color: var(--text);
-    font-family: 'DM Sans', sans-serif;
-}
-
-#root { width: 100%; height: 100%; }
-
-/* Amélioration de la visibilité des textes */
-input, textarea, button { 
-    font-family: 'DM Sans', sans-serif; 
-    color: white;
-}
-
-/* Scrollbar personnalisée et visible */
-::-webkit-scrollbar { width: 8px; height: 8px; }
-::-webkit-scrollbar-track { background: #050505; }
-::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; border: 2px solid #050505; }
-::-webkit-scrollbar-thumb:hover { background: var(--accent); }
-
-/* Animation des nœuds */
-.node-enter { animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
-@keyframes popIn {
-    from { transform: scale(0.8); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
-}
-
-.grid-bg {
+.canvas-container {
     background-image: 
-        linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
+        radial-gradient(circle at 2px 2px, #1a1a2e 1px, transparent 0);
     background-size: 40px 40px;
+    cursor: grab;
 }
+.canvas-container:active { cursor: grabbing; }
 
-.glass-morphism {
+.node {
+    position: absolute;
     background: var(--node-bg);
-    backdrop-filter: blur(10px);
     border: 1px solid var(--border);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    display: flex;
+    flex-direction: column;
+    transition: border-color 0.2s, box-shadow 0.2s;
 }
+.node.selected {
+    border-color: var(--accent);
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+    z-index: 100 !important;
+}
+.node-header {
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: move;
+}
+.node-content {
+    flex: 1;
+    padding: 12px;
+    overflow: auto;
+}
+textarea {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border: none;
+    color: #e2e8f0;
+    resize: none;
+    outline: none;
+    font-size: 14px;
+}
+.ctx-menu {
+    position: fixed;
+    background: #161625;
+    border: 1px solid #2d2d44;
+    border-radius: 6px;
+    padding: 5px;
+    z-index: 9999;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.8);
+}
+.ctx-item {
+    padding: 8px 15px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.ctx-item:hover { background: var(--accent); }
 
-/* Styles pour le texte pour qu'il "pop" sur le noir */
-.text-glow {
-    text-shadow: 0 0 10px rgba(255,255,255,0.2);
-}
+/* Amélioration visibilité : Texte bien blanc sur fond noir */
+.text-main { color: #ffffff !important; }
+.text-sec { color: #94a3b8 !important; }
 </style>
 </head>
 <body>
@@ -75,240 +104,200 @@ input, textarea, button {
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
 <script type="text/babel">
-const { useState, useEffect, useRef, useCallback, useMemo } = React;
+const { useState, useEffect, useRef, useCallback } = React;
 
-// --- CONFIGURATION ET THEMES ---
-const COLORS = {
-    blue: "#007aff", green: "#34c759", red: "#ff3b30", 
-    yellow: "#ffcc00", purple: "#af52de", orange: "#ff9500"
-};
+// --- UTILS ---
+const genId = () => Math.random().toString(36).substr(2, 9);
 
-const NODE_TYPES = {
-    NOTE: { id: 'note', label: 'Note', icon: '📝', color: COLORS.blue },
-    TODO: { id: 'todo', label: 'Tâches', icon: '✅', color: COLORS.green },
-    CODE: { id: 'code', label: 'Code', icon: '💻', color: COLORS.purple },
-    SKETCH: { id: 'sketch', label: 'Dessin', icon: '🎨', color: COLORS.orange },
-    CLOCK: { id: 'clock', label: 'Horloge', icon: '⏰', color: COLORS.yellow },
-    WEB: { id: 'web', label: 'Navigateur', icon: '🌐', color: COLORS.blue }
-};
+// --- COMPOSANTS ---
 
-// --- COMPOSANTS DE BASE ---
-
-const IconButton = ({ icon, onClick, color = "white", size = "16px" }) => (
-    <button onClick={onClick} style={{
-        background: 'none', border: 'none', cursor: 'pointer',
-        fontSize: size, color: color, padding: '4px',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        borderRadius: '4px', transition: 'background 0.2s'
-    }} onMouseEnter={e => e.target.style.background = 'rgba(255,255,255,0.1)'}
-       onMouseLeave={e => e.target.style.background = 'none'}>
-        {icon}
-    </button>
-);
-
-// --- WIDGETS SPÉCIFIQUES ---
-
-const SketchPad = () => {
-    const canvasRef = useRef(null);
-    const [isDrawing, setIsDrawing] = useState(false);
-
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        const ctx = canvas.getContext('2d');
-        ctx.strokeStyle = '#007aff';
-        ctx.lineWidth = 2;
-        ctx.lineCap = 'round';
-    }, []);
-
-    const startDrawing = (e) => {
-        const { offsetX, offsetY } = e.nativeEvent;
-        const ctx = canvasRef.current.getContext('2d');
-        ctx.beginPath();
-        ctx.moveTo(offsetX, offsetY);
-        setIsDrawing(true);
-    };
-
-    const draw = (e) => {
-        if (!isDrawing) return;
-        const { offsetX, offsetY } = e.nativeEvent;
-        const ctx = canvasRef.current.getContext('2d');
-        ctx.lineTo(offsetX, offsetY);
-        ctx.stroke();
-    };
-
-    return (
-        <canvas 
-            ref={canvasRef}
-            width="300" height="200"
-            style={{ width: '100%', height: '100%', background: '#111', cursor: 'crosshair' }}
-            onMouseDown={startDrawing}
-            onMouseMove={draw}
-            onMouseUp={() => setIsDrawing(false)}
-        />
-    );
-};
-
-// --- LE COMPOSANT NOEUD (TA LOGIQUE ORIGINALE AMÉLIORÉE) ---
-
-const Node = ({ node, isSelected, onSelect, onUpdate, onDelete }) => {
-    const [dragging, setDragging] = useState(false);
-    const [pos, setPos] = useState({ x: node.x, y: node.y });
-    const offset = useRef({ x: 0, y: 0 });
+const Node = ({ node, isSelected, onSelect, onUpdate, onDel, onConnStart }) => {
+    const [isDragging, setIsDragging] = useState(false);
+    const startPos = useRef({ x: 0, y: 0 });
 
     const handleMouseDown = (e) => {
         if (e.target.closest('.no-drag')) return;
-        onSelect(node.id);
-        setDragging(true);
-        offset.current = { x: e.clientX - pos.x, y: e.clientY - pos.y };
+        setIsDragging(true);
+        onSelect(node.id, e.shiftKey);
+        startPos.current = { x: e.clientX - node.x, y: e.clientY - node.y };
+        e.stopPropagation();
     };
 
     useEffect(() => {
-        if (!dragging) return;
+        if (!isDragging) return;
         const move = (e) => {
-            const newX = e.clientX - offset.current.x;
-            const newY = e.clientY - offset.current.y;
-            setPos({ x: newX, y: newY });
-            onUpdate(node.id, { x: newX, y: newY });
+            onUpdate(node.id, { 
+                x: e.clientX - startPos.current.x, 
+                y: e.clientY - startPos.current.y 
+            });
         };
-        const up = () => setDragging(false);
+        const stop = () => setIsDragging(false);
         window.addEventListener('mousemove', move);
-        window.addEventListener('mouseup', up);
-        return () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', up); };
-    }, [dragging]);
+        window.addEventListener('mouseup', stop);
+        return () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', stop); };
+    }, [isDragging]);
 
     return (
         <div 
-            className="glass-morphism node-enter"
-            style={{
-                position: 'absolute', left: pos.x, top: pos.y,
-                width: node.w || 300, height: node.h || 250,
-                zIndex: isSelected ? 100 : 10,
-                borderRadius: '12px', overflow: 'hidden',
-                border: isSelected ? `2px solid ${NODE_TYPES[node.type].color}` : '1px solid var(--border)',
-                display: 'flex', flexDirection: 'column'
+            className={`node ${isSelected ? 'selected' : ''}`}
+            style={{ 
+                left: node.x, top: node.y, 
+                width: node.w || 250, height: node.h || 180,
+                zIndex: node.z || 10
             }}
             onMouseDown={handleMouseDown}
         >
-            {/* Header */}
-            <div style={{
-                padding: '10px 15px', background: 'rgba(255,255,255,0.05)',
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                borderBottom: '1px solid var(--border)'
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span>{NODE_TYPES[node.type].icon}</span>
-                    <span style={{ fontWeight: '600', fontSize: '13px', color: 'white' }}>{node.title || node.type}</span>
+            <div className="node-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: node.color || '#3b82f6' }}></div>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8' }}>{node.type}</span>
                 </div>
-                <div className="no-drag" style={{ display: 'flex', gap: '5px' }}>
-                    <IconButton icon="×" color="#ff4444" onClick={() => onDelete(node.id)} />
+                <div className="no-drag" style={{ display: 'flex', gap: 5 }}>
+                    <button onClick={() => onConnStart(node.id)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}>🔗</button>
+                    <button onClick={() => onDel(node.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>×</button>
                 </div>
             </div>
-
-            {/* Content */}
-            <div className="no-drag" style={{ flex: 1, padding: '15px', overflowY: 'auto' }}>
-                {node.type === 'NOTE' && (
-                    <textarea 
-                        style={{ width: '100%', height: '100%', background: 'transparent', border: 'none', color: 'white', resize: 'none', outline: 'none', fontSize: '14px', lineHeight: '1.5' }}
-                        value={node.content}
-                        placeholder="Écrivez quelque chose..."
-                        onChange={(e) => onUpdate(node.id, { content: e.target.value })}
-                    />
-                )}
-                {node.type === 'SKETCH' && <SketchPad />}
-                {node.type === 'CLOCK' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-                        <div style={{ fontSize: '3rem', fontWeight: '800', color: COLORS.yellow }}>
-                            {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </div>
-                        <div style={{ color: 'var(--text-dim)' }}>{new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
-                    </div>
-                )}
-                {node.type === 'CODE' && (
-                    <pre style={{ fontFamily: 'DM Mono', fontSize: '12px', color: '#a5d6ff' }}>
-                        <code>{`// Canvas OS Script\nfunction init() {\n  console.log("System Ready");\n}`}</code>
-                    </pre>
-                )}
+            <div className="node-content no-drag">
+                <textarea 
+                    value={node.content} 
+                    onChange={(e) => onUpdate(node.id, { content: e.target.value })}
+                    placeholder="Tapez ici..."
+                />
             </div>
         </div>
     );
 };
 
-// --- APP PRINCIPALE ---
-
 const App = () => {
-    const [nodes, setNodes] = useState([
-        { id: '1', type: 'NOTE', x: 100, y: 100, w: 300, h: 200, content: 'Bienvenue dans ton nouveau Canvas ! Plus lisible et plus puissant.' },
-        { id: '2', type: 'CLOCK', x: 500, y: 100, w: 250, h: 150 }
-    ]);
-    const [selId, setSelId] = useState(null);
+    const [nodes, setNodes] = useState([]);
+    const [conns, setConns] = useState([]);
+    const [selIds, setSelIds] = useState([]);
+    const [vp, setVp] = useState({ x: 0, y: 0, z: 1 });
+    const [ctx, setCtx] = useState(null);
+    const [linking, setLinking] = useState(null);
 
-    const addNode = (type) => {
+    // Initialisation
+    useEffect(() => {
+        const saved = localStorage.getItem('canvas_os_data');
+        if (saved) {
+            const data = JSON.parse(saved);
+            setNodes(data.nodes || []);
+            setConns(data.conns || []);
+        }
+    }, []);
+
+    // Sauvegarde
+    useEffect(() => {
+        localStorage.setItem('canvas_os_data', JSON.stringify({ nodes, conns }));
+    }, [nodes, conns]);
+
+    const addNode = (type, x, y) => {
         const newNode = {
-            id: Date.now().toString(),
-            type,
-            x: 50 + Math.random() * 200,
-            y: 50 + Math.random() * 200,
-            w: 300, h: 250,
-            content: ''
+            id: genId(),
+            type: type || 'NOTE',
+            x: x || 100,
+            y: y || 100,
+            w: 250, h: 180,
+            content: '',
+            color: '#3b82f6',
+            z: nodes.length + 1
         };
         setNodes([...nodes, newNode]);
+        setCtx(null);
     };
 
-    const updateNode = (id, data) => {
-        setNodes(prev => prev.map(n => n.id === id ? { ...n, ...data } : n));
+    const updNode = (id, data) => {
+        setNodes(nds => nds.map(n => n.id === id ? { ...n, ...data } : n));
     };
 
-    const deleteNode = (id) => {
-        setNodes(prev => prev.filter(n => n.id !== id));
+    const delNode = (id) => {
+        setNodes(nds => nds.filter(n => n.id !== id));
+        setConns(cs => cs.filter(c => c.from !== id && c.to !== id));
+    };
+
+    const handleConn = (targetId) => {
+        if (linking && linking !== targetId) {
+            setConns([...conns, { id: genId(), from: linking, to: targetId }]);
+            setLinking(null);
+        } else {
+            setLinking(targetId);
+        }
+    };
+
+    // Rendu des lignes de connexion
+    const renderConnections = () => {
+        return conns.map(c => {
+            const n1 = nodes.find(n => n.id === c.from);
+            const n2 = nodes.find(n => n.id === c.to);
+            if (!n1 || !n2) return null;
+            return (
+                <line 
+                    key={c.id}
+                    x1={n1.x + 125} y1={n1.y + 90}
+                    x2={n2.x + 125} y2={n2.y + 90}
+                    stroke="rgba(59, 130, 246, 0.4)"
+                    strokeWidth="2"
+                />
+            );
+        });
     };
 
     return (
-        <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
-            {/* BARRE DE MENU */}
-            <nav className="glass-morphism" style={{ height: '60px', zHeader: 1000, display: 'flex', alignItems: 'center', padding: '0 25px', justifyContent: 'space-between', borderBottom: '1px solid var(--border)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                    <div style={{ fontSize: '20px', fontWeight: '800', letterSpacing: '-1px' }}>
-                        CANVAS <span style={{ color: var(--accent) }}>OS</span>
-                    </div>
-                    <div style={{ width: '1px', height: '24px', background: 'var(--border)' }}></div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                        {Object.values(NODE_TYPES).map(t => (
-                            <button key={t.id} onClick={() => addNode(t.id.toUpperCase())} style={{
-                                background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)',
-                                color: 'white', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer',
-                                fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px'
-                            }}>
-                                <span>{t.icon}</span> {t.label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            </nav>
+        <div 
+            className="canvas-container"
+            style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}
+            onContextMenu={(e) => { e.preventDefault(); setCtx({ x: e.clientX, y: e.clientY }); }}
+            onMouseDown={() => { setSelIds([]); setCtx(null); }}
+        >
+            {/* SVG Layer pour les connexions */}
+            <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+                {renderConnections()}
+            </svg>
 
-            {/* ZONE DE TRAVAIL */}
-            <main className="grid-bg" style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+            {/* Nodes Layer */}
+            <div style={{ transform: `translate(${vp.x}px, ${vp.y}px) scale(${vp.z})`, transformOrigin: '0 0' }}>
                 {nodes.map(n => (
                     <Node 
                         key={n.id} 
                         node={n} 
-                        isSelected={selId === n.id}
-                        onSelect={setSelId}
-                        onUpdate={updateNode}
-                        onDelete={deleteNode}
+                        isSelected={selIds.includes(n.id)}
+                        onSelect={(id, shift) => setSelIds(shift ? [...selIds, id] : [id])}
+                        onUpdate={updNode}
+                        onDel={delNode}
+                        onConnStart={handleConn}
                     />
                 ))}
-            </main>
+            </div>
 
-            {/* BARRE D'ETAT */}
-            <footer style={{ height: '35px', background: '#000', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', padding: '0 20px', justifyContent: 'space-between' }}>
-                <div style={{ fontSize: '11px', color: 'var(--text-dim)', display: 'flex', gap: '15px' }}>
-                    <span>SYSTÈME : OPÉRATIONNEL</span>
-                    <span>NOEUDS : {nodes.length}</span>
+            {/* UI Overlay */}
+            <div style={{ position: 'absolute', top: 20, left: 20, pointerEvents: 'none' }}>
+                <h1 style={{ fontSize: 24, fontWeight: 800, color: 'white', letterSpacing: -1 }}>
+                    CANVAS <span style={{ color: '#3b82f6' }}>OS</span>
+                </h1>
+                <p style={{ fontSize: 12, color: '#64748b' }}>Version 2.0 - {nodes.length} objets</p>
+            </div>
+
+            {/* Barre de contrôle en bas */}
+            <div style={{ position: 'absolute', bottom: 20, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 10, background: '#11111a', padding: '10px 20px', borderRadius: '50px', border: '1px solid #222', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
+                <button onClick={() => addNode('NOTE')} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>+ Note</button>
+                <div style={{ width: 1, height: 20, background: '#333' }}></div>
+                <button onClick={() => setNodes([])} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 13 }}>Tout effacer</button>
+            </div>
+
+            {/* Menu Contextuel */}
+            {ctx && (
+                <div className="ctx-menu" style={{ left: ctx.x, top: ctx.y }}>
+                    <div className="ctx-item" onClick={() => addNode('NOTE', ctx.x, ctx.y)}>📝 Nouvelle Note</div>
+                    <div className="ctx-item" onClick={() => addNode('CODE', ctx.x, ctx.y)}>💻 Bloc Code</div>
+                    <div className="ctx-item" onClick={() => setVp({ x: 0, y: 0, z: 1 })}>🎯 Recentrer</div>
                 </div>
-                <div style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
-                    {new Date().toLocaleDateString()}
+            )}
+
+            {linking && (
+                <div style={{ position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)', background: '#3b82f6', color: 'white', padding: '5px 15px', borderRadius: '20px', fontSize: 12, fontWeight: 600 }}>
+                    Clique sur un autre nœud pour lier
                 </div>
-            </footer>
+            )}
         </div>
     );
 };
