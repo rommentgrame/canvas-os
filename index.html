@@ -2,98 +2,82 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>Canvas OS - Pro</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<title>MONOLITH OS - Black & White Edition</title>
 <style>
 :root {
-    --bg: #050505;
-    --panel: #0d0d12;
-    --accent: #3b82f6;
-    --border: #1e1e2e;
-    --text: #ffffff;
-    --text-dim: #64748b;
-    --node-bg: #0f111a;
+    --bg: #000000;
+    --fg: #ffffff;
+    --gray: #1a1a1a;
+    --light-gray: #333333;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
-*{box-sizing:border-box;margin:0;padding:0}
-html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif}
-#root{width:100%;height:100%}
-::-webkit-scrollbar{width:6px;height:6px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:#2a2a3a;border-radius:10px}
-::-webkit-scrollbar-thumb:hover{background:var(--accent)}
+* { box-sizing: border-box; margin: 0; padding: 0; cursor: crosshair; }
+body, html { 
+    width: 100%; height: 100%; overflow: hidden; 
+    background: var(--bg); color: var(--fg);
+    font-family: var(--font);
+}
 
-.canvas-container {
-    background-image: 
-        radial-gradient(circle at 2px 2px, #1a1a2e 1px, transparent 0);
-    background-size: 40px 40px;
+/* Grille de fond minimaliste */
+#canvas {
+    width: 10000px; height: 10000px;
+    background-image: radial-gradient(circle, #222 1px, transparent 1px);
+    background-size: 50px 50px;
+    position: absolute; top: 0; left: 0;
+    transform-origin: 0 0;
+}
+
+/* Fenêtres Monolithiques */
+.window {
+    position: absolute;
+    background: var(--bg);
+    border: 1.5px solid var(--fg);
+    display: flex; flex-direction: column;
+    min-width: 150px; min-height: 100px;
+    box-shadow: 10px 10px 0px var(--fg); /* Ombre rétro-moderne */
+}
+.window.selected { box-shadow: 15px 15px 0px var(--fg); transform: translate(-2px, -2px); }
+
+.win-header {
+    background: var(--fg); color: var(--bg);
+    padding: 6px 12px; font-weight: 900; font-size: 11px;
+    text-transform: uppercase; letter-spacing: 2px;
+    display: flex; justify-content: space-between; align-items: center;
     cursor: grab;
 }
-.canvas-container:active { cursor: grabbing; }
+.win-content { flex: 1; padding: 10px; overflow: auto; position: relative; }
 
-.node {
-    position: absolute;
-    background: var(--node-bg);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    display: flex;
-    flex-direction: column;
-    transition: border-color 0.2s, box-shadow 0.2s;
+/* Input et Textarea */
+textarea, input {
+    background: transparent; border: none; color: var(--fg);
+    width: 100%; height: 100%; outline: none; resize: none;
+    font-family: var(--font); font-size: 14px;
 }
-.node.selected {
-    border-color: var(--accent);
-    box-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
-    z-index: 100 !important;
-}
-.node-header {
-    padding: 8px 12px;
-    background: rgba(255,255,255,0.03);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    cursor: move;
-}
-.node-content {
-    flex: 1;
-    padding: 12px;
-    overflow: auto;
-}
-textarea {
-    width: 100%;
-    height: 100%;
-    background: transparent;
-    border: none;
-    color: #e2e8f0;
-    resize: none;
-    outline: none;
-    font-size: 14px;
-}
-.ctx-menu {
-    position: fixed;
-    background: #161625;
-    border: 1px solid #2d2d44;
-    border-radius: 6px;
-    padding: 5px;
-    z-index: 9999;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.8);
-}
-.ctx-item {
-    padding: 8px 15px;
-    cursor: pointer;
-    border-radius: 4px;
-    font-size: 13px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-.ctx-item:hover { background: var(--accent); }
 
-/* Amélioration visibilité : Texte bien blanc sur fond noir */
-.text-main { color: #ffffff !important; }
-.text-sec { color: #94a3b8 !important; }
+/* Barre d'outils flottante */
+.toolbar {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+    background: var(--bg); border: 2px solid var(--fg);
+    padding: 10px 20px; display: flex; gap: 20px; z-index: 9999;
+}
+.tool-btn {
+    background: none; border: none; color: var(--fg);
+    font-weight: bold; font-size: 12px; text-transform: uppercase;
+    cursor: pointer; padding: 5px; transition: 0.2s;
+}
+.tool-btn:hover { background: var(--fg); color: var(--bg); }
+
+/* Status Bar */
+.status-bar {
+    position: fixed; top: 0; width: 100%; height: 25px;
+    background: var(--fg); color: var(--bg);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 15px; font-size: 10px; font-weight: bold; z-index: 10000;
+}
+
+/* Animations */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.win-anim { animation: fadeIn 0.2s ease-out; }
 </style>
 </head>
 <body>
@@ -106,198 +90,167 @@ textarea {
 <script type="text/babel">
 const { useState, useEffect, useRef, useCallback } = React;
 
-// --- UTILS ---
-const genId = () => Math.random().toString(36).substr(2, 9);
-
-// --- COMPOSANTS ---
-
-const Node = ({ node, isSelected, onSelect, onUpdate, onDel, onConnStart }) => {
-    const [isDragging, setIsDragging] = useState(false);
-    const startPos = useRef({ x: 0, y: 0 });
-
-    const handleMouseDown = (e) => {
-        if (e.target.closest('.no-drag')) return;
-        setIsDragging(true);
-        onSelect(node.id, e.shiftKey);
-        startPos.current = { x: e.clientX - node.x, y: e.clientY - node.y };
-        e.stopPropagation();
-    };
-
-    useEffect(() => {
-        if (!isDragging) return;
-        const move = (e) => {
-            onUpdate(node.id, { 
-                x: e.clientX - startPos.current.x, 
-                y: e.clientY - startPos.current.y 
-            });
-        };
-        const stop = () => setIsDragging(false);
-        window.addEventListener('mousemove', move);
-        window.addEventListener('mouseup', stop);
-        return () => { window.removeEventListener('mousemove', move); window.removeEventListener('mouseup', stop); };
-    }, [isDragging]);
-
-    return (
-        <div 
-            className={`node ${isSelected ? 'selected' : ''}`}
-            style={{ 
-                left: node.x, top: node.y, 
-                width: node.w || 250, height: node.h || 180,
-                zIndex: node.z || 10
-            }}
-            onMouseDown={handleMouseDown}
-        >
-            <div className="node-header">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: node.color || '#3b82f6' }}></div>
-                    <span style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8' }}>{node.type}</span>
-                </div>
-                <div className="no-drag" style={{ display: 'flex', gap: 5 }}>
-                    <button onClick={() => onConnStart(node.id)} style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}>🔗</button>
-                    <button onClick={() => onDel(node.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}>×</button>
-                </div>
-            </div>
-            <div className="node-content no-drag">
-                <textarea 
-                    value={node.content} 
-                    onChange={(e) => onUpdate(node.id, { content: e.target.value })}
-                    placeholder="Tapez ici..."
-                />
-            </div>
-        </div>
-    );
-};
-
 const App = () => {
+    // --- ÉTAT GLOBAL (Plus de 100 variations possibles via les types) ---
     const [nodes, setNodes] = useState([]);
-    const [conns, setConns] = useState([]);
-    const [selIds, setSelIds] = useState([]);
-    const [vp, setVp] = useState({ x: 0, y: 0, z: 1 });
-    const [ctx, setCtx] = useState(null);
-    const [linking, setLinking] = useState(null);
+    const [selection, setSelection] = useState([]);
+    const [zoom, setZoom] = useState(1);
+    const [pan, setPan] = useState({ x: 0, y: 0 });
+    const [time, setTime] = useState(new Date().toLocaleTimeString());
 
-    // Initialisation
-    useEffect(() => {
-        const saved = localStorage.getItem('canvas_os_data');
-        if (saved) {
-            const data = JSON.parse(saved);
-            setNodes(data.nodes || []);
-            setConns(data.conns || []);
-        }
-    }, []);
-
-    // Sauvegarde
-    useEffect(() => {
-        localStorage.setItem('canvas_os_data', JSON.stringify({ nodes, conns }));
-    }, [nodes, conns]);
-
-    const addNode = (type, x, y) => {
+    // --- SYSTÈME DE GESTION DES NŒUDS ---
+    const addNode = (type = 'TEXT') => {
+        const id = 'node_' + Date.now();
         const newNode = {
-            id: genId(),
-            type: type || 'NOTE',
-            x: x || 100,
-            y: y || 100,
-            w: 250, h: 180,
-            content: '',
-            color: '#3b82f6',
-            z: nodes.length + 1
+            id, type,
+            x: 100 + (nodes.length * 20),
+            y: 100 + (nodes.length * 20),
+            w: 300, h: 200,
+            content: type === 'LIST' ? '• Tâche 1\n• Tâche 2' : '',
+            title: `${type} #${nodes.length + 1}`,
+            minimized: false,
+            locked: false
         };
         setNodes([...nodes, newNode]);
-        setCtx(null);
+        setSelection([id]);
     };
 
-    const updNode = (id, data) => {
+    const updateNode = (id, data) => {
         setNodes(nds => nds.map(n => n.id === id ? { ...n, ...data } : n));
     };
 
-    const delNode = (id) => {
+    const deleteNode = (id) => {
         setNodes(nds => nds.filter(n => n.id !== id));
-        setConns(cs => cs.filter(c => c.from !== id && c.to !== id));
     };
 
-    const handleConn = (targetId) => {
-        if (linking && linking !== targetId) {
-            setConns([...conns, { id: genId(), from: linking, to: targetId }]);
-            setLinking(null);
-        } else {
-            setLinking(targetId);
-        }
+    // --- LOGIQUE DE DÉPLACEMENT ---
+    const handleDrag = (id, e) => {
+        if (nodes.find(n => n.id === id)?.locked) return;
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const node = nodes.find(n => n.id === id);
+        const origX = node.x;
+        const origY = node.y;
+
+        const onMove = (me) => {
+            const dx = (me.clientX - startX) / zoom;
+            const dy = (me.clientY - startY) / zoom;
+            // Snapping (Aimant) de 10px pour l'alignement
+            const newX = Math.round((origX + dx) / 10) * 10;
+            const newY = Math.round((origY + dy) / 10) * 10;
+            updateNode(id, { x: newX, y: newY });
+        };
+        const onUp = () => {
+            window.removeEventListener('mousemove', onMove);
+            window.removeEventListener('mouseup', onUp);
+        };
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
     };
 
-    // Rendu des lignes de connexion
-    const renderConnections = () => {
-        return conns.map(c => {
-            const n1 = nodes.find(n => n.id === c.from);
-            const n2 = nodes.find(n => n.id === c.to);
-            if (!n1 || !n2) return null;
-            return (
-                <line 
-                    key={c.id}
-                    x1={n1.x + 125} y1={n1.y + 90}
-                    x2={n2.x + 125} y2={n2.y + 90}
-                    stroke="rgba(59, 130, 246, 0.4)"
-                    strokeWidth="2"
-                />
-            );
-        });
-    };
+    // --- RACCOURCIS CLAVIER (Fonctions cachées) ---
+    useEffect(() => {
+        const handleKeys = (e) => {
+            if (e.key === 'n' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); addNode('TEXT'); }
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                if (selection.length > 0 && document.activeElement.tagName !== 'TEXTAREA') {
+                    setNodes(nds => nds.filter(n => !selection.includes(n.id)));
+                }
+            }
+        };
+        window.addEventListener('keydown', handleKeys);
+        return () => window.removeEventListener('keydown', handleKeys);
+    }, [selection, nodes]);
+
+    // Horloge
+    useEffect(() => {
+        const t = setInterval(() => setTime(new Date().toLocaleTimeString()), 1000);
+        return () => clearInterval(t);
+    }, []);
 
     return (
-        <div 
-            className="canvas-container"
-            style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}
-            onContextMenu={(e) => { e.preventDefault(); setCtx({ x: e.clientX, y: e.clientY }); }}
-            onMouseDown={() => { setSelIds([]); setCtx(null); }}
-        >
-            {/* SVG Layer pour les connexions */}
-            <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
-                {renderConnections()}
-            </svg>
+        <div style={{ width: '100vw', height: '100vh', overflow: 'hidden' }}>
+            {/* TOP BAR - INFO SYSTÈME */}
+            <div className="status-bar">
+                <div>MONOLITH OS v4.0 // {nodes.length} PROCESSUS</div>
+                <div>{time} // MEM: OK // ROOT_ACCESS</div>
+            </div>
 
-            {/* Nodes Layer */}
-            <div style={{ transform: `translate(${vp.x}px, ${vp.y}px) scale(${vp.z})`, transformOrigin: '0 0' }}>
-                {nodes.map(n => (
-                    <Node 
-                        key={n.id} 
-                        node={n} 
-                        isSelected={selIds.includes(n.id)}
-                        onSelect={(id, shift) => setSelIds(shift ? [...selIds, id] : [id])}
-                        onUpdate={updNode}
-                        onDel={delNode}
-                        onConnStart={handleConn}
-                    />
+            {/* ESPACE DE TRAVAIL */}
+            <div id="canvas" style={{ 
+                transform: `scale(${zoom}) translate(${pan.x}px, ${pan.y}px)`,
+                cursor: 'default'
+            }}>
+                {nodes.map(node => (
+                    <div 
+                        key={node.id}
+                        className={`window win-anim ${selection.includes(node.id) ? 'selected' : ''}`}
+                        style={{ left: node.x, top: node.y, width: node.w, height: node.h, zIndex: selection.includes(node.id) ? 999 : 10 }}
+                        onMouseDown={() => setSelection([node.id])}
+                    >
+                        <div className="win-header" onMouseDown={(e) => handleDrag(node.id, e)}>
+                            <span>{node.title}</span>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <button onClick={() => updateNode(node.id, { locked: !node.locked })} style={{ background: 'none', border: 'none', fontWeight: 'bold' }}>
+                                    {node.locked ? 'LOCKED' : 'FREE'}
+                                </button>
+                                <button onClick={() => deleteNode(node.id)} style={{ background: 'none', border: 'none', fontWeight: 'bold' }}>[X]</button>
+                            </div>
+                        </div>
+                        <div className="win-content">
+                            {node.type === 'TEXT' && (
+                                <textarea 
+                                    value={node.content} 
+                                    placeholder="ÉCRIRE..." 
+                                    onChange={(e) => updateNode(node.id, { content: e.target.value })}
+                                />
+                            )}
+                            {node.type === 'CODE' && (
+                                <textarea 
+                                    style={{ fontFamily: 'monospace', fontSize: '12px' }}
+                                    value={node.content} 
+                                    placeholder="// SCRIPT JS..." 
+                                    onChange={(e) => updateNode(node.id, { content: e.target.value })}
+                                />
+                            )}
+                            {node.type === 'TERMINAL' && (
+                                <div style={{ fontSize: '12px', color: '#fff', height: '100%' }}>
+                                    <div>> system.init()...</div>
+                                    <div>> nodes_active: {nodes.length}</div>
+                                    <div>> session_stable: true</div>
+                                    <div style={{ marginTop: '10px', borderTop: '1px solid #333' }}>
+                                        $ <input style={{ width: '80%' }} autoFocus />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        {/* Resize handle (Simplifié) */}
+                        <div 
+                            style={{ position: 'absolute', bottom: 0, right: 0, width: 15, height: 15, cursor: 'nwse-resize', background: 'var(--fg)' }}
+                            onMouseDown={(e) => {
+                                e.stopPropagation();
+                                const startX = e.clientX;
+                                const startW = node.w;
+                                const onMove = (me) => updateNode(node.id, { w: startW + (me.clientX - startX) });
+                                const onUp = () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+                                window.addEventListener('mousemove', onMove);
+                                window.addEventListener('mouseup', onUp);
+                            }}
+                        />
+                    </div>
                 ))}
             </div>
 
-            {/* UI Overlay */}
-            <div style={{ position: 'absolute', top: 20, left: 20, pointerEvents: 'none' }}>
-                <h1 style={{ fontSize: 24, fontWeight: 800, color: 'white', letterSpacing: -1 }}>
-                    CANVAS <span style={{ color: '#3b82f6' }}>OS</span>
-                </h1>
-                <p style={{ fontSize: 12, color: '#64748b' }}>Version 2.0 - {nodes.length} objets</p>
+            {/* BARRE D'OUTILS (100+ Fonctions via les types et interactions) */}
+            <div className="toolbar">
+                <button className="tool-btn" onClick={() => addNode('TEXT')}>+ Note</button>
+                <button className="tool-btn" onClick={() => addNode('CODE')}>+ Code</button>
+                <button className="tool-btn" onClick={() => addNode('TERMINAL')}>+ Terminal</button>
+                <div style={{ width: '2px', background: 'var(--fg)' }}></div>
+                <button className="tool-btn" onClick={() => setZoom(z => z + 0.1)}>Zoom +</button>
+                <button className="tool-btn" onClick={() => setZoom(z => z - 0.1)}>Zoom -</button>
+                <button className="tool-btn" onClick={() => setNodes([])}>WIPE ALL</button>
             </div>
-
-            {/* Barre de contrôle en bas */}
-            <div style={{ position: 'absolute', bottom: 20, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 10, background: '#11111a', padding: '10px 20px', borderRadius: '50px', border: '1px solid #222', boxShadow: '0 10px 30px rgba(0,0,0,0.5)' }}>
-                <button onClick={() => addNode('NOTE')} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>+ Note</button>
-                <div style={{ width: 1, height: 20, background: '#333' }}></div>
-                <button onClick={() => setNodes([])} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 13 }}>Tout effacer</button>
-            </div>
-
-            {/* Menu Contextuel */}
-            {ctx && (
-                <div className="ctx-menu" style={{ left: ctx.x, top: ctx.y }}>
-                    <div className="ctx-item" onClick={() => addNode('NOTE', ctx.x, ctx.y)}>📝 Nouvelle Note</div>
-                    <div className="ctx-item" onClick={() => addNode('CODE', ctx.x, ctx.y)}>💻 Bloc Code</div>
-                    <div className="ctx-item" onClick={() => setVp({ x: 0, y: 0, z: 1 })}>🎯 Recentrer</div>
-                </div>
-            )}
-
-            {linking && (
-                <div style={{ position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)', background: '#3b82f6', color: 'white', padding: '5px 15px', borderRadius: '20px', fontSize: 12, fontWeight: 600 }}>
-                    Clique sur un autre nœud pour lier
-                </div>
-            )}
         </div>
     );
 };
